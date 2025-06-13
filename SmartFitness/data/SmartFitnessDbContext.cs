@@ -10,8 +10,15 @@ namespace SmartFitnessApi.Data
             : base(options)
         {
         }
-
         public DbSet<User> Users { get; set; }
         // Add other DbSets for your entities
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // everything without an explicit schema now uses "auth"
+            modelBuilder.HasDefaultSchema("auth");
+
+            base.OnModelCreating(modelBuilder);
+        }
+
     }
 }

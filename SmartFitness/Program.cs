@@ -33,10 +33,12 @@ namespace SmartFitnessApi
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartFitness API V1");
                 });
             }
-
+            app.UseRouting();
             app.UseHttpsRedirection();
-            app.Run();
+            app.UseAuthorization();
+            // Map controllers
             app.MapControllers();
+            app.Run();
         }
     }
 }

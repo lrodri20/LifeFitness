@@ -84,5 +84,6 @@ namespace SmartFitnessApi.Services
 
             return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
         }
+
     }
 }

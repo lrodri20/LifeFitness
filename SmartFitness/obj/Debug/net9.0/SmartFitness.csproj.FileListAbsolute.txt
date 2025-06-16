@@ -85,3 +85,4 @@
 /Users/luisrodriguez/Documents/SmartFitness/SmartFitness/bin/Debug/net9.0/runtimes/win/lib/net6.0/System.Security.Cryptography.ProtectedData.dll
 /Users/luisrodriguez/Documents/SmartFitness/SmartFitness/bin/Debug/net9.0/runtimes/win/lib/net6.0/System.Windows.Extensions.dll
 /Users/luisrodriguez/Documents/SmartFitness/SmartFitness/obj/Debug/net9.0/SmartFitness.sourcelink.json
+/Users/luisrodriguez/Documents/SmartFitness/SmartFitness/bin/Debug/net9.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll

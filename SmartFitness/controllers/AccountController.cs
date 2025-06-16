@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
 using SmartFitnessApi.Models;
 using SmartFitnessApi.Services;
 using System.Threading.Tasks;
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 namespace SmartFitnessApi.Controllers
 {
     [ApiController]
@@ -71,6 +72,32 @@ namespace SmartFitnessApi.Controllers
             };
 
             return Ok(response);
+        }
+        /// <summary>
+        /// Test endpoint to validate the JWT bearer token and show remaining time until expiration.
+        /// </summary>
+        [HttpGet("session-test")]
+        [Microsoft.AspNetCore.Authorization.Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public IActionResult TestSession()
+        {
+            var expClaim = User.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+            if (expClaim == null)
+                return Unauthorized(new { message = "Expiration claim not found." });
+
+            if (!long.TryParse(expClaim, out var expSeconds))
+                return Unauthorized(new { message = "Invalid expiration claim." });
+
+            var expDate = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
+            var remaining = expDate - DateTime.UtcNow;
+
+            return Ok(new
+            {
+                user = User.Identity?.Name,
+                expiresAt = expDate,
+                remainingSeconds = (int)remaining.TotalSeconds
+            });
         }
     }
 }

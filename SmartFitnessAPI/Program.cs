@@ -58,6 +58,9 @@ namespace SmartFitnessApi
             builder.Services.AddDbContext<SmartFitnessDbContext>(options =>
                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             var jwtSection = configuration.GetSection("JwtSettings");
+            if (!jwtSection.Exists())
+                throw new InvalidOperationException("JwtSettings section is missing from configuration!");
+
             var secretKey = jwtSection.GetValue<string>("SecretKey");
             var issuer = jwtSection.GetValue<string>("Issuer");
             var audience = jwtSection.GetValue<string>("Audience");

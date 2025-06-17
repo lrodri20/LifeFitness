@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "E3+H26wyS2k=",
+  "dgSpecHash": "jcutTYYfBpE=",
   "success": true,
-  "projectFilePath": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitness/SmartFitness.csproj",
+  "projectFilePath": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitnessApi/SmartFitness.csproj",
   "expectedPackageFiles": [
     "/Users/luisrodriguez/.nuget/packages/azure.core/1.38.0/azure.core.1.38.0.nupkg.sha512",
     "/Users/luisrodriguez/.nuget/packages/azure.identity/1.11.4/azure.identity.1.11.4.nupkg.sha512",

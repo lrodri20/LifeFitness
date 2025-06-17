@@ -51,6 +51,48 @@ public class AccountService : IAccountService
         return await _dbContext.Users
                                .SingleOrDefaultAsync(u => u.Email == email);
     }
+    public async Task<string> GeneratePasswordResetTokenAsync(string email)
+    {
+        var user = await _dbContext.Users
+                            .SingleOrDefaultAsync(u => u.Email == email);
+        if (user is null)
+            throw new KeyNotFoundException("Email not found");
+
+        // generate a cryptographically-random token
+        var token = Guid.NewGuid().ToString("N");
+
+        var pr = new PasswordResetToken
+        {
+            UserId = user.Id,
+            Token = token,
+            ExpiresAt = DateTime.UtcNow.AddHours(1),
+            Used = false
+        };
+        _dbContext.PasswordResetTokens.Add(pr);
+        await _dbContext.SaveChangesAsync();
+
+        return token;
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest req)
+    {
+        var pr = await _dbContext.PasswordResetTokens
+                          .Include(x => x.User)
+                          .SingleOrDefaultAsync(x =>
+                              x.User.Email == req.Email &&
+                              x.Token == req.Token &&
+                              !x.Used &&
+                              x.ExpiresAt > DateTime.UtcNow);
+
+        if (pr is null)
+            throw new InvalidOperationException("Invalid or expired reset token");
+
+        // hash and set the new password
+        pr.User.PasswordHash = _authService.HashPassword(req.NewPassword);
+        pr.Used = true;
+
+        await _dbContext.SaveChangesAsync();
+    }
     public class UserAlreadyExistsException : Exception
     {
         public string ParamName { get; }

@@ -6,5 +6,7 @@ namespace SmartFitnessApi.Services
     {
         Task<UserDto> SignUpAsync(SignUpRequest request);
         Task<User?> GetByEmailAsync(string email);
+        Task<string> GeneratePasswordResetTokenAsync(string email);
+        Task ResetPasswordAsync(ResetPasswordRequest request);
     }
 }

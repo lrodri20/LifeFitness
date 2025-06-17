@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/luisrodriguez/Documents/SmartFitness/SmartFitness/SmartFitness.csproj": {}
+    "/Users/luisrodriguez/Documents/SmartFitness/SmartFitnessApi/SmartFitness.csproj": {}
   },
   "projects": {
-    "/Users/luisrodriguez/Documents/SmartFitness/SmartFitness/SmartFitness.csproj": {
+    "/Users/luisrodriguez/Documents/SmartFitness/SmartFitnessApi/SmartFitness.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitness/SmartFitness.csproj",
+        "projectUniqueName": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitnessApi/SmartFitness.csproj",
         "projectName": "SmartFitness",
-        "projectPath": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitness/SmartFitness.csproj",
+        "projectPath": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitnessApi/SmartFitness.csproj",
         "packagesPath": "/Users/luisrodriguez/.nuget/packages/",
-        "outputPath": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitness/obj/",
+        "outputPath": "/Users/luisrodriguez/Documents/SmartFitness/SmartFitnessApi/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/luisrodriguez/.nuget/NuGet/NuGet.Config"

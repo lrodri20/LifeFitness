@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartFitnessApi.Data;
@@ -96,15 +97,19 @@ namespace SmartFitnessApi
                 };
                 options.Events = new JwtBearerEvents
                 {
-                    OnAuthenticationFailed = ctx =>
+                    OnTokenValidated = async ctx =>
                     {
-                        Console.WriteLine($"[AuthFailed] {ctx.Exception.GetType().Name}: {ctx.Exception.Message}");
-                        return Task.CompletedTask;
-                    },
-                    OnTokenValidated = ctx =>
-                    {
-                        Console.WriteLine($"[AuthSuccess] User “{ctx.Principal.Identity?.Name}”");
-                        return Task.CompletedTask;
+                        var db = ctx.HttpContext.RequestServices
+                                    .GetRequiredService<SmartFitnessDbContext>();
+                        var jti = ctx.Principal!.FindFirst(JwtRegisteredClaimNames.Jti)!.Value;
+
+                        bool revoked = await db.RevokedTokens
+                                               .AnyAsync(x => x.JwtId == jti);
+                        if (revoked)
+                        {
+                            // immediately reject
+                            ctx.Fail("Token has been revoked.");
+                        }
                     }
                 };
             });

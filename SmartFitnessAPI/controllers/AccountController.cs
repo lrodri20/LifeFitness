@@ -4,6 +4,7 @@ using SmartFitnessApi.Models;
 using SmartFitnessApi.Services;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using SmartFitnessApi.Data;
 namespace SmartFitnessApi.Controllers
 {
     [ApiController]
@@ -12,11 +13,13 @@ namespace SmartFitnessApi.Controllers
     {
         private readonly IAccountService _accountService;
         private readonly IAuthenticationService _authenticationService;
+        private readonly SmartFitnessDbContext _dbContext;
 
-        public AccountController(IAccountService accountService, IAuthenticationService authenticationService)
+        public AccountController(IAccountService accountService, IAuthenticationService authenticationService, SmartFitnessDbContext db)
         {
             _accountService = accountService;
             _authenticationService = authenticationService;
+            _dbContext = db;
         }
 
         /// <summary>
@@ -64,11 +67,12 @@ namespace SmartFitnessApi.Controllers
 
             // Generate JWT
             var token = _authenticationService.GenerateJwtToken(user);
-
+            var refreshToken = await _accountService.GenerateRefreshTokenAsync(user.Id);
             var response = new TokenResponse
             {
                 Token = token,
-                ExpiresIn = _authenticationService.TokenExpiryInSeconds
+                ExpiresIn = _authenticationService.TokenExpiryInSeconds,
+                RefreshToken = refreshToken
             };
 
             return Ok(response);
@@ -143,9 +147,28 @@ namespace SmartFitnessApi.Controllers
         [HttpPost("signout")]
         public async Task<IActionResult> SignOut([FromBody] SignOutRequest request)
         {
-            await _accountService.RevokeRefreshTokenAsync(request.RefreshToken);
-            // Always return 204 No Content so clients can safely clear tokens,
-            // even if the token had already been revoked or didn’t exist.
+            // 1) grab the raw token from the Authorization header
+            var header = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (header == null || !header.StartsWith("Bearer "))
+                return BadRequest("No bearer token provided.");
+
+            var tokenStr = header["Bearer ".Length..].Trim();
+
+            // 2) parse the token to read the JTI
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(tokenStr);
+            var jti = jwt.Id;  // same as the 'jti' claim
+
+            // 3) persist it as revoked
+            var revoked = new RevokedToken
+            {
+                JwtId = jti,
+                RevokedAt = DateTime.UtcNow,
+                ExpiresAt = jwt.ValidTo  // optional: auto-clean after expiry
+            };
+            _dbContext.RevokedTokens.Add(revoked);
+            await _dbContext.SaveChangesAsync();
+
             return NoContent();
         }
     }

@@ -14,5 +14,6 @@ namespace SmartFitnessApi.Models
         /// Expiration duration (in seconds) of the token.
         /// </summary>
         public int ExpiresIn { get; set; }
+        public string RefreshToken { get; init; } = null!;
     }
 }

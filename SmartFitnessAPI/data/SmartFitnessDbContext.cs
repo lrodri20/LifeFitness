@@ -14,6 +14,7 @@ namespace SmartFitnessApi.Data
         public DbSet<Profile> Profiles { get; set; } = null!;
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
         public DbSet<UserRefreshToken> UserRefreshTokens { get; set; } = null!;
+        public DbSet<RevokedToken> RevokedTokens { get; set; } = null!;
         // Add other DbSets for your entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +50,9 @@ namespace SmartFitnessApi.Data
               .WithMany()
               .HasForeignKey(urt => urt.UserId)
               .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<RevokedToken>()
+              .HasIndex(rt => rt.JwtId)
+              .IsUnique();
             base.OnModelCreating(modelBuilder);
         }
 

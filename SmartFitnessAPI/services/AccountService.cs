@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartFitnessApi.Data;
 using SmartFitnessApi.Models;
 using SmartFitnessApi.Services;
+using System.Security.Cryptography;
 
 public class UserAlreadyExistsException : Exception
 {
@@ -167,6 +168,28 @@ public class AccountService : IAccountService
             profile.ProfilePictureUrl,
             profile.Bio
         );
+    }
+    public async Task<string> GenerateRefreshTokenAsync(int userId)
+    {
+        // 1) Create a new random token
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        var refreshToken = Convert.ToBase64String(randomBytes);
+
+        // 2) Persist it
+        var entity = new UserRefreshToken
+        {
+            UserId = userId,
+            Token = refreshToken,
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(7)  // or whatever lifetime you choose
+        };
+
+        _dbContext.UserRefreshTokens.Add(entity);
+        await _dbContext.SaveChangesAsync();
+
+        return refreshToken;
     }
     public async Task RevokeRefreshTokenAsync(string refreshToken)
     {

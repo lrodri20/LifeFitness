@@ -11,7 +11,7 @@ namespace SmartFitnessApi.Services
         Task<ProfileDto?> GetProfileAsync(int userId);
         Task<ProfileDto> UpdateProfileAsync(int userId, ProfileDto input);
         Task RevokeRefreshTokenAsync(string refreshToken);
-
+        Task<string> GenerateRefreshTokenAsync(int userId);
 
     }
 }

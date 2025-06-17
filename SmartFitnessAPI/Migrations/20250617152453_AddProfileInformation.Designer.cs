@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SmartFitnessApi.Data;
 
@@ -11,9 +12,11 @@ using SmartFitnessApi.Data;
 namespace SmartFitness.Migrations
 {
     [DbContext(typeof(SmartFitnessDbContext))]
-    partial class SmartFitnessDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250617152453_AddProfileInformation")]
+    partial class AddProfileInformation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,45 +150,6 @@ namespace SmartFitness.Migrations
                     b.ToTable("Users", "auth");
                 });
 
-            modelBuilder.Entity("SmartFitnessApi.Models.UserRefreshToken", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RevokedReason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("UserId1")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
-
-                    b.ToTable("UserRefreshTokens", "auth");
-                });
-
             modelBuilder.Entity("SmartFitnessApi.Models.PasswordResetToken", b =>
                 {
                     b.HasOne("SmartFitnessApi.Models.User", "User")
@@ -208,26 +172,9 @@ namespace SmartFitness.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("SmartFitnessApi.Models.UserRefreshToken", b =>
-                {
-                    b.HasOne("SmartFitnessApi.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SmartFitnessApi.Models.User", null)
-                        .WithMany("RefreshTokens")
-                        .HasForeignKey("UserId1");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("SmartFitnessApi.Models.User", b =>
                 {
                     b.Navigation("Profile");
-
-                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

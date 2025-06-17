@@ -134,5 +134,19 @@ namespace SmartFitnessApi.Controllers
                 return BadRequest(new { Error = ex.Message });
             }
         }
+        /// <summary>
+        /// Revokes a refresh token (i.e. signs the user out).
+        /// </summary>
+        /// <remarks>
+        /// Clients should discard their access token and refresh token after this call.
+        /// </remarks>
+        [HttpPost("signout")]
+        public async Task<IActionResult> SignOut([FromBody] SignOutRequest request)
+        {
+            await _accountService.RevokeRefreshTokenAsync(request.RefreshToken);
+            // Always return 204 No Content so clients can safely clear tokens,
+            // even if the token had already been revoked or didn’t exist.
+            return NoContent();
+        }
     }
 }

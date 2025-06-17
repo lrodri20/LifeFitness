@@ -9,5 +9,8 @@ namespace SmartFitnessApi.Models
         public bool IsEmailConfirmed { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastLoginAt { get; set; }
+        public Profile? Profile { get; set; }
+        public ICollection<UserRefreshToken> RefreshTokens { get; set; } = new List<UserRefreshToken>();
+
     }
 }

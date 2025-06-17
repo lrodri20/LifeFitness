@@ -93,6 +93,97 @@ public class AccountService : IAccountService
 
         await _dbContext.SaveChangesAsync();
     }
+    public async Task<ProfileDto> GetProfileAsync(int userId)
+    {
+        var profile = await _dbContext.Profiles
+                               .AsNoTracking()
+                               .SingleOrDefaultAsync(p => p.UserId == userId);
+
+        if (profile == null)
+            throw new NotFoundException($"Profile for user {userId} not found.");
+
+        // map entity → DTO
+        return new ProfileDto(
+            profile.FirstName,
+            profile.LastName,
+            profile.DisplayName,
+            profile.DateOfBirth,
+            profile.PhoneNumber,
+            profile.AddressLine1,
+            profile.City,
+            profile.State,
+            profile.PostalCode,
+            profile.Country,
+            profile.ProfilePictureUrl,
+            profile.Bio
+        );
+    }
+
+    public async Task<ProfileDto> UpdateProfileAsync(int userId, ProfileDto input)
+    {
+        // ensure the user actually exists
+        var userExists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
+        if (!userExists)
+            throw new NotFoundException($"User {userId} not found.");
+
+        // load or create the profile
+        var profile = await _dbContext.Profiles
+                               .SingleOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null)
+        {
+            profile = new Profile { UserId = userId, CreatedAt = DateTime.UtcNow };
+            _dbContext.Profiles.Add(profile);
+        }
+
+        // apply updates
+        profile.FirstName = input.FirstName;
+        profile.LastName = input.LastName;
+        profile.DisplayName = input.DisplayName;
+        profile.DateOfBirth = input.DateOfBirth;
+        profile.PhoneNumber = input.PhoneNumber;
+        profile.AddressLine1 = input.AddressLine1;
+        profile.City = input.City;
+        profile.State = input.State;
+        profile.PostalCode = input.PostalCode;
+        profile.Country = input.Country;
+        profile.ProfilePictureUrl = input.ProfilePictureUrl;
+        profile.Bio = input.Bio;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+
+        // return the updated DTO
+        return new ProfileDto(
+            profile.FirstName,
+            profile.LastName,
+            profile.DisplayName,
+            profile.DateOfBirth,
+            profile.PhoneNumber,
+            profile.AddressLine1,
+            profile.City,
+            profile.State,
+            profile.PostalCode,
+            profile.Country,
+            profile.ProfilePictureUrl,
+            profile.Bio
+        );
+    }
+    public async Task RevokeRefreshTokenAsync(string refreshToken)
+    {
+        var token = await _dbContext.UserRefreshTokens
+                             .SingleOrDefaultAsync(t => t.Token == refreshToken);
+
+        if (token == null || token.RevokedAt != null)
+        {
+            // Either unknown or already revoked—nothing to do
+            return;
+        }
+
+        token.RevokedAt = DateTime.UtcNow;
+        token.RevokedReason = "User signed out";
+
+        await _dbContext.SaveChangesAsync();
+    }
     public class UserAlreadyExistsException : Exception
     {
         public string ParamName { get; }

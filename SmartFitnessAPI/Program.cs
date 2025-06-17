@@ -8,6 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartFitnessApi.Data;
+using SmartFitnessApi.Models;
 using SmartFitnessApi.Services;
 
 namespace SmartFitnessApi
@@ -20,6 +21,9 @@ namespace SmartFitnessApi
             var configuration = builder.Configuration;
             // Add services to the container.
             builder.Services.AddEndpointsApiExplorer();
+            builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+
             builder.Services.AddCors(opts =>
             {
                 opts.AddPolicy("AllowAll", policy =>
@@ -67,14 +71,9 @@ namespace SmartFitnessApi
             builder.Services.AddControllers();
             builder.Services.AddDbContext<SmartFitnessDbContext>(options =>
                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-            var jwtSection = configuration.GetSection("JwtSettings");
-            if (!jwtSection.Exists())
-                throw new InvalidOperationException("JwtSettings section is missing from configuration!");
 
-            var secretKey = jwtSection.GetValue<string>("SecretKey");
-            var issuer = jwtSection.GetValue<string>("Issuer");
-            var audience = jwtSection.GetValue<string>("Audience");
-
+            var jwtSection = builder.Configuration.GetSection("JwtSettings");
+            var keyBytes = Encoding.UTF8.GetBytes(jwtSection["SecretKey"]!);
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -87,15 +86,29 @@ namespace SmartFitnessApi
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = issuer,
+                    ValidIssuer = jwtSection["Issuer"],
                     ValidateAudience = true,
-                    ValidAudience = audience,
+                    ValidAudience = jwtSection["Audience"],
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = ctx =>
+                    {
+                        Console.WriteLine($"[AuthFailed] {ctx.Exception.GetType().Name}: {ctx.Exception.Message}");
+                        return Task.CompletedTask;
+                    },
+                    OnTokenValidated = ctx =>
+                    {
+                        Console.WriteLine($"[AuthSuccess] User “{ctx.Principal.Identity?.Name}”");
+                        return Task.CompletedTask;
+                    }
+                };
             });
+
             var app = builder.Build();
 
 

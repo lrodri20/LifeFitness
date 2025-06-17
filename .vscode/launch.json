@@ -6,18 +6,16 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            // After building, your DLL will be under bin/Debug/<TFM>/
             "program": "${workspaceFolder}/SmartFitnessApi/bin/Debug/net9.0/SmartFitness.dll",
-            "args": [],
-            // cwd must be the folder where SmartFitness.csproj lives
             "cwd": "${workspaceFolder}/SmartFitnessApi",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "console": "integratedTerminal",
             "stopAtEntry": false,
             "serverReadyAction": {
                 "action": "openExternally",
                 "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
-            "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
             }
         }
     ]

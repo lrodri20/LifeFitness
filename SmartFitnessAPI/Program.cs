@@ -20,6 +20,16 @@ namespace SmartFitnessApi
             var configuration = builder.Configuration;
             // Add services to the container.
             builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddCors(opts =>
+            {
+                opts.AddPolicy("AllowAll", policy =>
+                {
+                    policy
+                      .AllowAnyOrigin()
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
+                });
+            });
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo
@@ -101,6 +111,7 @@ namespace SmartFitnessApi
             }
 
             app.UseRouting();
+            app.UseCors("AllowAll");
             app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();

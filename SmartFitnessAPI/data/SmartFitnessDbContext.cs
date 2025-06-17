@@ -17,11 +17,25 @@ namespace SmartFitnessApi.Data
         {
             // everything without an explicit schema now uses "auth"
             modelBuilder.HasDefaultSchema("auth");
-            modelBuilder.Entity<PasswordResetToken>()
-              .HasOne(pr => pr.User)
-              .WithMany()  // or .WithMany(u=>u.PasswordResetTokens) if you add that nav on User
-              .HasForeignKey(pr => pr.UserId)
-              .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PasswordResetToken>(b =>
+            {
+                b.ToTable("PasswordResetTokens");
+                b.HasKey(p => p.Id);
+
+                b.Property(p => p.Token)
+                .IsRequired();
+
+                b.Property(p => p.ExpiresAt)
+                .IsRequired();
+
+                b.Property(p => p.Used)
+                .IsRequired();
+
+                b.HasOne(p => p.User)
+                .WithMany()  // or .WithMany(u=>u.PasswordResetTokens)
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            });
             base.OnModelCreating(modelBuilder);
         }
 

@@ -99,5 +99,40 @@ namespace SmartFitnessApi.Controllers
                 remainingSeconds = (int)remaining.TotalSeconds
             });
         }
+        /// <summary>
+        /// Request a password reset token (you can email this to the user).
+        /// </summary>
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest req)
+        {
+            try
+            {
+                var token = await _accountService.GeneratePasswordResetTokenAsync(req.Email);
+                // TODO: send `token` to the user via email.
+                return Ok(new { Token = token });
+            }
+            catch (KeyNotFoundException)
+            {
+                // do not reveal that the email does not exist
+                return Ok();
+            }
+        }
+
+        /// <summary>
+        /// Reset a password using the token the user received.
+        /// </summary>
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
+        {
+            try
+            {
+                await _accountService.ResetPasswordAsync(req);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Error = ex.Message });
+            }
+        }
     }
 }

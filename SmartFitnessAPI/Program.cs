@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartFitnessApi.Data;
+using SmartFitnessApi.Data.Seeding;
 using SmartFitnessApi.Models;
 using SmartFitnessApi.Services;
 
@@ -16,7 +18,7 @@ namespace SmartFitnessApi
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
             var configuration = builder.Configuration;
@@ -30,9 +32,9 @@ namespace SmartFitnessApi
                 opts.AddPolicy("AllowAll", policy =>
                 {
                     policy
-                      .AllowAnyOrigin()
-                      .AllowAnyHeader()
-                      .AllowAnyMethod();
+                    .AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
                 });
             });
             builder.Services.AddSwaggerGen(c =>
@@ -53,25 +55,26 @@ namespace SmartFitnessApi
                 });
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
-                    {
-                        new OpenApiSecurityScheme
                         {
-                            Reference = new OpenApiReference
+                            new OpenApiSecurityScheme
                             {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        new string[] {}
-                    }
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            new string[] {}
+                        }
                 });
             });
 
             builder.Services.AddScoped<IAccountService, AccountService>();
             builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+            builder.Services.AddScoped<IMatchingService, MatchingService>();
             builder.Services.AddControllers();
             builder.Services.AddDbContext<SmartFitnessDbContext>(options =>
-               options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             var jwtSection = builder.Configuration.GetSection("JwtSettings");
             var keyBytes = Encoding.UTF8.GetBytes(jwtSection["SecretKey"]!);
@@ -104,7 +107,7 @@ namespace SmartFitnessApi
                         var jti = ctx.Principal!.FindFirst(JwtRegisteredClaimNames.Jti)!.Value;
 
                         bool revoked = await db.RevokedTokens
-                                               .AnyAsync(x => x.JwtId == jti);
+                                            .AnyAsync(x => x.JwtId == jti);
                         if (revoked)
                         {
                             // immediately reject
@@ -126,6 +129,7 @@ namespace SmartFitnessApi
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "SmartFitness API V1");
                 });
+                await app.Services.InitializeDatabaseAsync();
             }
 
             app.UseRouting();
@@ -136,6 +140,16 @@ namespace SmartFitnessApi
             // Map controllers
             app.MapControllers();
             app.Run();
+        }
+    }
+    public static class DbInitializerExtensions
+    {
+        public static async Task InitializeDatabaseAsync(this IServiceProvider serviceProvider)
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<SmartFitnessDbContext>();
+            var authenticationService = scope.ServiceProvider.GetRequiredService<IAuthenticationService>();
+            await DbInitializer.SeedAsync(context, authenticationService);
         }
     }
 }

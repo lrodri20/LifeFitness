@@ -404,7 +404,7 @@ namespace SmartFitnessApi.Data.Seeding
 
         private static async Task SeedMatches(SmartFitnessDbContext context, List<Profile> profiles)
         {
-            var matches = new List<Match>();
+            var matches = new List<MatchRequest>();
             var random = new Random();
             var now = DateTime.UtcNow;
 
@@ -422,7 +422,7 @@ namespace SmartFitnessApi.Data.Seeding
             {
                 if (idx1 < profiles.Count && idx2 < profiles.Count)
                 {
-                    matches.Add(new Match
+                    matches.Add(new MatchRequest
                     {
                         RequesterId = profiles[idx1].Id,
                         RequesteeId = profiles[idx2].Id,
@@ -447,7 +447,7 @@ namespace SmartFitnessApi.Data.Seeding
                     !matches.Any(m => (m.RequesterId == requester.Id && m.RequesteeId == requestee.Id) ||
                                      (m.RequesterId == requestee.Id && m.RequesteeId == requester.Id)))
                 {
-                    matches.Add(new Match
+                    matches.Add(new MatchRequest
                     {
                         RequesterId = requester.Id,
                         RequesteeId = requestee.Id,

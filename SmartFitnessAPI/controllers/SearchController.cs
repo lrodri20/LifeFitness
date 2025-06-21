@@ -19,13 +19,14 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartFitnessApi.Models;
+using SmartFitnessApi.Models.enums;
 using SmartFitnessApi.Services;
 
 namespace SmartFitnessApi.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("api")]
+    [Route("api/search")]
     public class SearchController : ControllerBase
     {
         private readonly ISearchService _searchService;
@@ -36,16 +37,26 @@ namespace SmartFitnessApi.Controllers
         }
 
         /// <summary>
-        /// Search for potential workout partners based on preferences
+        /// Search for potential workout partners based on user preferences
         /// </summary>
-        /// <param name="radius">Search radius in miles (overrides user preference)</param>
-        /// <param name="limit">Number of results to return</param>
-        [HttpGet("search/users")]
-        public async Task<ActionResult<IEnumerable<ProfileMatchingDto>>> SearchPotentialMatches(
+        /// <param name="radius">Override search radius in miles (optional, uses user preference if not provided)</param>
+        /// <param name="limit">Number of results to return (default: 20, max: 50)</param>
+        /// <param name="activityFilter">Filter by specific activity (optional)</param>
+        /// <param name="fitnessLevelFilter">Filter by fitness level (optional)</param>
+        /// <returns>List of potential matches</returns>
+        [HttpGet("users")]
+        public async Task<ActionResult<SearchResultsDto>> SearchPotentialMatches(
             [FromQuery] int? radius = null,
-            [FromQuery] int limit = 20)
+            [FromQuery] int limit = 20,
+            [FromQuery] string? activityFilter = null,
+            [FromQuery] FitnessLevel? fitnessLevelFilter = null)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            if (userId == 0)
+            {
+                return Unauthorized("User not found in token");
+            }
 
             // Validate parameters
             if (radius.HasValue && (radius < 1 || radius > 100))
@@ -60,8 +71,45 @@ namespace SmartFitnessApi.Controllers
 
             try
             {
-                var potentialMatches = await _searchService.SearchPotentialMatchesAsync(userId, radius, limit);
-                return Ok(potentialMatches);
+                var searchParams = new SearchParameters
+                {
+                    Radius = radius,
+                    Limit = limit,
+                    ActivityFilter = activityFilter,
+                    FitnessLevelFilter = fitnessLevelFilter
+                };
+
+                var results = await _searchService.SearchPotentialMatchesAsync(userId, searchParams);
+                return Ok(results);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred while searching for matches");
+            }
+        }
+
+        /// <summary>
+        /// Get a preview of potential matches count with different radius options
+        /// </summary>
+        /// <returns>Count of potential matches at different distances</returns>
+        [HttpGet("preview")]
+        public async Task<ActionResult<SearchPreviewDto>> GetSearchPreview()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            if (userId == 0)
+            {
+                return Unauthorized("User not found in token");
+            }
+
+            try
+            {
+                var preview = await _searchService.GetSearchPreviewAsync(userId);
+                return Ok(preview);
             }
             catch (InvalidOperationException ex)
             {

@@ -144,14 +144,13 @@ namespace SmartFitnessApi.Services
                 });
             }
 
-            return new ActiveMatchesResponseDto
-            {
-                Matches = matchDtos,
-                TotalCount = totalCount,
-                Offset = offset,
-                Limit = limit,
-                Statistics = statistics
-            };
+            return new ActiveMatchesResponseDto(
+     matchDtos,
+     totalCount,
+     offset,
+     limit,
+     statistics
+ );
         }
 
         public async Task RemoveMatchAsync(int matchId, int userId)

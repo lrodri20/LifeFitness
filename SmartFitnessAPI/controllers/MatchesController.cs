@@ -26,9 +26,9 @@ namespace SmartFitnessApi.Controllers
         /// </summary>
         [HttpGet]
         public async Task<ActionResult<ActiveMatchesResponseDto>> GetActiveMatches(
-            [FromQuery] string sortBy = "date",
-            [FromQuery] int limit = 50,
-            [FromQuery] int offset = 0)
+       [FromQuery] string sortBy = "recent",  // changed default to "recent"
+       [FromQuery] int limit = 50,
+       [FromQuery] int offset = 0)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 

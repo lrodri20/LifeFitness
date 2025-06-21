@@ -17,6 +17,7 @@ namespace SmartFitnessApi.Data
         public DbSet<RevokedToken> RevokedTokens { get; set; } = null!;
         public DbSet<Activity> Activities { get; set; }
         public DbSet<MatchRequest> MatchRequests { get; set; }
+        public DbSet<ProfileSchedule> ProfileSchedules { get; set; }
         public DbSet<MatchingPreference> MatchingPreferences { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -55,13 +56,13 @@ namespace SmartFitnessApi.Data
             modelBuilder.Entity<RevokedToken>()
               .HasIndex(rt => rt.JwtId)
               .IsUnique();
-            modelBuilder.Entity<Match>()
+            modelBuilder.Entity<MatchRequest>()
                 .HasOne(m => m.Requester)
                 .WithMany()
                 .HasForeignKey(m => m.RequesterId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Match>()
+            modelBuilder.Entity<MatchRequest>()
                 .HasOne(m => m.Requestee)
                 .WithMany()
                 .HasForeignKey(m => m.RequesteeId)

@@ -16,5 +16,7 @@ namespace SmartFitnessApi.Models
         public List<string> Goals { get; set; } = new List<string>();
         public List<string> CommonActivities { get; set; } = new List<string>();
         public bool HasHomeGym { get; set; }
+        public int? ExistingMatchId { get; set; }
+        public MatchStatus? ExistingMatchStatus { get; set; }
     }
 }

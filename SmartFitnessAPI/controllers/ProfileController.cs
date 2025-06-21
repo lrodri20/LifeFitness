@@ -10,7 +10,7 @@ namespace SmartFitnessApi.Controllers
 
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ProfileController : ControllerBase
     {
         private readonly IAccountService _acct;

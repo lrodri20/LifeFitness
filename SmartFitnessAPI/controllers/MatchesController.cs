@@ -12,59 +12,74 @@ namespace SmartFitnessApi.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class MatchesController : ControllerBase
     {
-        private readonly IMatchingService _matchingService;
+        private readonly IMatchService _matchService;
 
-        public MatchesController(IMatchingService matchingService)
+        public MatchesController(IMatchService matchService)
         {
-            _matchingService = matchingService;
+            _matchService = matchService;
         }
-
         /// <summary>
-        /// Get potential matches for the current user
+        /// Get all active matches (accepted workout partners)
         /// </summary>
-        /// <param name="radius">Maximum distance in miles (default: 5)</param>
-        /// <param name="limit">Maximum number of results (default: 20)</param>
-        /// <returns>List of potential matches sorted by compatibility score</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProfileMatchingDto>>> GetPotentialMatches(
-            [FromQuery] int radius = 5,
-            [FromQuery] int limit = 20)
+        public async Task<ActionResult<ActiveMatchesResponseDto>> GetActiveMatches(
+            [FromQuery] string sortBy = "date",
+            [FromQuery] int limit = 50,
+            [FromQuery] int offset = 0)
         {
-            // Get the current user's ID from the JWT token
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-            if (userId == 0)
-            {
-                return Unauthorized("User not found in token");
-            }
-
-            // Validate parameters
-            if (radius < 1 || radius > 100)
-            {
-                return BadRequest("Radius must be between 1 and 100 miles");
-            }
-
-            if (limit < 1 || limit > 50)
-            {
-                return BadRequest("Limit must be between 1 and 50");
-            }
 
             try
             {
-                var matches = await _matchingService.GetPotentialMatchesAsync(userId, radius, limit);
+                var matches = await _matchService.GetActiveMatchesAsync(userId, sortBy, limit, offset);
                 return Ok(matches);
             }
             catch (InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
             }
-            catch (Exception)
+        }
+
+        /// <summary>
+        /// Remove an active match (unfriend)
+        /// </summary>
+        [HttpDelete("{matchId}")]
+        public async Task<ActionResult> RemoveMatch([FromRoute] int matchId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            try
             {
-                return StatusCode(500, "An error occurred while fetching matches");
+                await _matchService.RemoveMatchAsync(matchId, userId);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
+
+        /// <summary>
+        /// Block a user (prevents future match requests)
+        /// </summary>
+        [HttpPost("{matchId}/block")]
+        public async Task<ActionResult> BlockUser([FromRoute] int matchId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            try
+            {
+                await _matchService.BlockUserAsync(matchId, userId);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }

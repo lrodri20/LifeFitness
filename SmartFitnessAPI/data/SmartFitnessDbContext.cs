@@ -16,7 +16,7 @@ namespace SmartFitnessApi.Data
         public DbSet<UserRefreshToken> UserRefreshTokens { get; set; } = null!;
         public DbSet<RevokedToken> RevokedTokens { get; set; } = null!;
         public DbSet<Activity> Activities { get; set; }
-        public DbSet<Match> Matches { get; set; }
+        public DbSet<MatchRequest> MatchRequests { get; set; }
         public DbSet<MatchingPreference> MatchingPreferences { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

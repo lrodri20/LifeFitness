@@ -2,7 +2,7 @@ using SmartFitnessApi.Models.enums;
 
 namespace SmartFitnessApi.Models
 {
-    public class Match
+    public class MatchRequest
     {
         public int Id { get; set; }
 

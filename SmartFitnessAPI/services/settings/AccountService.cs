@@ -50,6 +50,7 @@ public class AccountService : IAccountService
     {
         // Returns the User entity (including PasswordHash) or null
         return await _dbContext.Users
+                               .Include(x => x.Profile)
                                .SingleOrDefaultAsync(u => u.Email == email);
     }
     public async Task<string> GeneratePasswordResetTokenAsync(string email)

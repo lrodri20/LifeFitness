@@ -15,5 +15,7 @@ namespace SmartFitnessApi.Models
         /// </summary>
         public int ExpiresIn { get; set; }
         public string RefreshToken { get; init; } = null!;
+        public string? FirstName { get; init; }
+        public string? LastName { get; init; }
     }
 }

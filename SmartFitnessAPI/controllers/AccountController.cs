@@ -72,7 +72,9 @@ namespace SmartFitnessApi.Controllers
             {
                 Token = token,
                 ExpiresIn = _authenticationService.TokenExpiryInSeconds,
-                RefreshToken = refreshToken
+                RefreshToken = refreshToken,
+                FirstName = user.Profile?.FirstName,
+                LastName = user.Profile?.LastName,
             };
 
             return Ok(response);

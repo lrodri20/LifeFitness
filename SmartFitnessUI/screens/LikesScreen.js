@@ -1,0 +1,111 @@
+// src/screens/LikesScreen.js
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { AuthContext } from '../context/AuthContext';
+
+// Dummy data - replace with API call response
+const DUMMY_LIKES = [
+    { id: '1', name: 'Jordan, 26', image: 'https://placekitten.com/200/200' },
+    { id: '2', name: 'Taylor, 29', image: 'https://placekitten.com/201/200' },
+    { id: '3', name: 'Morgan, 24', image: 'https://placekitten.com/202/200' },
+    { id: '4', name: 'Casey, 31', image: 'https://placekitten.com/203/200' },
+];
+
+export default function LikesScreen() {
+    const { userToken } = useContext(AuthContext);
+    const [likes, setLikes] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // TODO: Replace with real API fetch: fetch(`/api/likes`, { headers: { Authorization: `Bearer ${userToken}` } })
+        setTimeout(() => {
+            setLikes(DUMMY_LIKES);
+            setLoading(false);
+        }, 1000);
+    }, []);
+
+    const renderItem = ({ item }) => (
+        <View style={styles.card} key={item.id}>
+            <Image source={{ uri: item.image }} style={styles.avatar} />
+            <Text style={styles.name}>{item.name}</Text>
+            <TouchableOpacity style={styles.button} onPress={() => {/* Navigate to profile or match back */ }}>
+                <Text style={styles.buttonText}>View</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
+    if (loading) {
+        return (
+            <View style={styles.center}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+            </View>
+        );
+    }
+
+    return (
+        <SafeAreaView style={styles.container}>
+            {likes.length === 0 ? (
+                <View style={styles.center}>
+                    <Text style={styles.emptyText}>No one has liked you yet.</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={likes}
+                    keyExtractor={item => item.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.list}
+                    numColumns={2}
+                />
+            )}
+        </SafeAreaView>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
+    list: {
+        padding: 16,
+    },
+    card: {
+        flex: 1,
+        alignItems: 'center',
+        margin: 8,
+        backgroundColor: '#f9f9f9',
+        borderRadius: 12,
+        padding: 16,
+        elevation: 2,
+    },
+    avatar: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        marginBottom: 12,
+    },
+    name: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    button: {
+        backgroundColor: '#4CAF50',
+        paddingVertical: 6,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 14,
+    },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyText: {
+        color: '#555',
+        fontSize: 16,
+    },
+});

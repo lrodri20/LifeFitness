@@ -1,24 +1,72 @@
+// App.js
 import React, { useContext } from 'react';
+import { TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import {
-  TouchableOpacity,
-} from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import SignInScreen from './screens/SignInScreen';
 import SignUpScreen from './screens/SignUpScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
-import HomeScreen from './screens/HomeScreen';
+import HomeScreen from './screens/HomeScreen';   // Activities screen
+import MatchesScreen from './screens/MatchesScreen';
+import LikesScreen from './screens/LikesScreen';
+import MessagesScreen from './screens/MessagesScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import { Ionicons } from '@expo/vector-icons';
+
 const AuthStack = createStackNavigator();
 const AppStack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 0,
+          elevation: 5,
+          height: 60,
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          switch (route.name) {
+            case 'Matches':
+              iconName = focused ? 'people' : 'people-outline';
+              break;
+            case 'Likes':
+              iconName = focused ? 'heart' : 'heart-outline';
+              break;
+            case 'Activities':
+              iconName = focused ? 'calendar' : 'calendar-outline';
+              break;
+            case 'Messages':
+              iconName = focused ? 'chatbubble' : 'chatbubble-outline';
+              break;
+            default:
+              iconName = 'ellipse';
+          }
+          return <Ionicons name={iconName} size={24} color={focused ? '#4CAF50' : '#888'} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Matches" component={MatchesScreen} />
+      <Tab.Screen name="Likes" component={LikesScreen} />
+      <Tab.Screen name="Activities" component={HomeScreen} />
+      <Tab.Screen name="Messages" component={MessagesScreen} />
+    </Tab.Navigator>
+  );
+}
 
 function RootNavigator() {
   const { userToken, isLoading } = useContext(AuthContext);
 
-  // While we restore the token, you could show a splash screen
   if (isLoading) {
+    // Could show splash
     return null;
   }
 
@@ -33,15 +81,13 @@ function RootNavigator() {
       ) : (
         <AppStack.Navigator>
           <AppStack.Screen
-            name="Home"
-            component={HomeScreen}
+            name="Main"
+            component={MainTabs}
             options={({ navigation }) => ({
               title: 'Home',
+              headerTitleAlign: 'center',
               headerRight: () => (
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('Settings')}
-                  style={{ marginRight: 16 }}
-                >
+                <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ marginRight: 16 }}>
                   <Ionicons name="settings-outline" size={24} color="#000" />
                 </TouchableOpacity>
               ),
@@ -50,7 +96,10 @@ function RootNavigator() {
           <AppStack.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{ title: 'Profile Settings' }}
+            options={{
+              title: 'Profile Settings',
+              headerTitleAlign: 'center',
+            }}
           />
         </AppStack.Navigator>
       )}

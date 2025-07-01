@@ -1,11 +1,22 @@
 // src/screens/MatchesScreen.js
-import React, { useState } from 'react';
+
+/**
+ * MatchesScreen
+ *
+ * Displays a Tinder-style swipe deck of profile cards fetched from Unsplash.
+ * Users can swipe right to "like" or left to "pass".
+ */
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-// Patch React.PropTypes and Swiper.propTypes to avoid missing PropTypes errors
+// Monkey-patch React.PropTypes for deck-swiper compatibility
 if (!React.PropTypes) React.PropTypes = PropTypes;
+
+// Dynamically require Swiper so PropTypes is patched first
 const SwiperModule = require('react-native-deck-swiper');
 const Swiper = SwiperModule.default;
+
+// Define expected prop types to avoid missing PropTypes errors
 Swiper.propTypes = {
     cards: PropTypes.array,
     renderCard: PropTypes.func,
@@ -19,32 +30,89 @@ Swiper.propTypes = {
     verticalSwipe: PropTypes.bool,
 };
 
-import { View, Text, Image, StyleSheet, Dimensions, SafeAreaView } from 'react-native';
+import {
+    View,
+    Text,
+    Image,
+    StyleSheet,
+    Dimensions,
+    SafeAreaView,
+    ActivityIndicator
+} from 'react-native';
 
+// Get device width for responsive card sizing
 const { width } = Dimensions.get('window');
 
-// Dummy profiles data
-const PROFILES = [
-    { id: '1', name: 'Eliza, 28', image: 'https://placekitten.com/400/500', bio: 'Love hiking and outdoor adventures.' },
-    { id: '2', name: 'Mark, 30', image: 'https://placekitten.com/401/500', bio: 'Coffee fanatic and bookworm.' },
-    { id: '3', name: 'Sophie, 25', image: 'https://placekitten.com/402/500', bio: 'Yoga instructor and avid traveler.' },
-    { id: '4', name: 'Alex, 27', image: 'https://placekitten.com/403/500', bio: 'Musician and foodie.' },
-];
+// -----------------------------------------------------------------------------
+// Unsplash API configuration
+// Replace 'YOUR_UNSPLASH_ACCESS_KEY' with your real key from https://unsplash.com/developers
+const UNSPLASH_ACCESS_KEY = 'Aslkw0ARwU8C-fquxYYCm8Ejc7X0X8LGLyeUn6o8plE';
+const UNSPLASH_URL =
+    `https://api.unsplash.com/photos/random?count=4&query=portrait&client_id=${UNSPLASH_ACCESS_KEY}`;
+// -----------------------------------------------------------------------------
 
 export default function MatchesScreen() {
-    const [cards] = useState(PROFILES);
+    // State: array of profile objects, and loading flag
+    const [cards, setCards] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const onSwipedRight = (cardIndex) => {
-        const matched = cards[cardIndex];
-        console.log('You matched with:', matched.name);
-        // TODO: persist match
+    // On mount, fetch random portrait images from Unsplash
+    useEffect(() => {
+        fetch(UNSPLASH_URL)
+            .then(res => res.json())
+            .then(data => {
+                // Map Unsplash response into our profile format
+                const profiles = data.map(photo => ({
+                    id: photo.id,
+                    name: `${photo.user.first_name} ${photo.user.last_name || ''}`.trim()
+                        + `, ${getRandomAge()}`,
+                    image: photo.urls.regular,
+                    bio: photo.user.bio || 'Hello there!',
+                }));
+                setCards(profiles);
+            })
+            .catch(err => {
+                console.warn('Unsplash fetch error:', err);
+                // Fallback: use static placeholder if API call fails
+                setCards([
+                    {
+                        id: 'fallback-1',
+                        name: 'Fallback User, 29',
+                        image: 'https://placekitten.com/400/500',
+                        bio: 'Unable to load images from Unsplash.',
+                    },
+                ]);
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    /**
+     * getRandomAge
+     * Returns a random integer age between 22 and 45.
+     */
+    const getRandomAge = () => Math.floor(Math.random() * 24) + 22;
+
+    /**
+     * onSwipedRight
+     * Callback when a card is swiped right ("like").
+     */
+    const onSwipedRight = index => {
+        const matched = cards[index];
+        console.log('Matched with:', matched.name);
+        // TODO: send match event to backend
     };
 
-    const onSwipedAll = () => {
-        console.log('No more profiles');
-    };
+    /**
+     * onSwipedAll
+     * Callback when all cards have been swiped.
+     */
+    const onSwipedAll = () => console.log('No more profiles to swipe');
 
-    const renderCard = (card) => (
+    /**
+     * renderCard
+     * Renders each card component from the `cards` array.
+     */
+    const renderCard = card => (
         <View style={styles.card} key={card.id}>
             <Image source={{ uri: card.image }} style={styles.cardImage} />
             <View style={styles.cardDetails}>
@@ -54,6 +122,16 @@ export default function MatchesScreen() {
         </View>
     );
 
+    // Show loading spinner while fetching images
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.loaderContainer}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+            </SafeAreaView>
+        );
+    }
+
+    // Main render: the Swiper deck inside a SafeAreaView
     return (
         <SafeAreaView style={styles.container}>
             <Swiper
@@ -71,15 +149,35 @@ export default function MatchesScreen() {
                     left: {
                         title: 'NOPE',
                         style: {
-                            label: { backgroundColor: 'red', color: 'white', fontSize: 24 },
-                            wrapper: { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: 20, marginLeft: -20 },
+                            label: {
+                                backgroundColor: 'red',
+                                color: 'white',
+                                fontSize: 24,
+                            },
+                            wrapper: {
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                justifyContent: 'flex-start',
+                                marginTop: 20,
+                                marginLeft: -20,
+                            },
                         },
                     },
                     right: {
                         title: 'LIKE',
                         style: {
-                            label: { backgroundColor: '#4CAF50', color: 'white', fontSize: 24 },
-                            wrapper: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', marginTop: 20, marginLeft: 20 },
+                            label: {
+                                backgroundColor: '#4CAF50',
+                                color: 'white',
+                                fontSize: 24,
+                            },
+                            wrapper: {
+                                flexDirection: 'column',
+                                alignItems: 'flex-start',
+                                justifyContent: 'flex-start',
+                                marginTop: 20,
+                                marginLeft: 20,
+                            },
                         },
                     },
                 }}
@@ -89,12 +187,52 @@ export default function MatchesScreen() {
     );
 }
 
+// -----------------------------------------------------------------------------
+// Styles for MatchesScreen
+// -----------------------------------------------------------------------------
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f9f9f9', alignItems: 'center', justifyContent: 'center' },
-    swiper: { flex: 1, paddingTop: 20 },
-    card: { width: width * 0.9, height: width * 1.1, borderRadius: 16, backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5, elevation: 3, overflow: 'hidden' },
-    cardImage: { width: '100%', height: '75%' },
-    cardDetails: { padding: 16 },
-    cardName: { fontSize: 22, fontWeight: '600', marginBottom: 8 },
-    cardBio: { fontSize: 14, color: '#555' },
+    container: {
+        flex: 1,
+        backgroundColor: '#f9f9f9',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f9f9f9',
+    },
+    swiper: {
+        flex: 1,
+        paddingTop: 20,
+    },
+    card: {
+        width: width * 0.9,
+        height: width * 1.1,
+        borderRadius: 16,
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        elevation: 3,
+        overflow: 'hidden',
+    },
+    cardImage: {
+        width: '100%',
+        height: '75%',
+    },
+    cardDetails: {
+        padding: 16,
+    },
+    cardName: {
+        fontSize: 22,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    cardBio: {
+        fontSize: 14,
+        color: '#555',
+    },
 });

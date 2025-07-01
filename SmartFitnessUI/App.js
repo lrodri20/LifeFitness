@@ -91,6 +91,7 @@ function RootNavigator() {
                   <Ionicons name="settings-outline" size={24} color="#000" />
                 </TouchableOpacity>
               ),
+              headerTintColor: '#4CAF50',
             })}
           />
           <AppStack.Screen
@@ -99,6 +100,7 @@ function RootNavigator() {
             options={{
               title: 'Profile Settings',
               headerTitleAlign: 'center',
+              headerTintColor: '#4CAF50',
             }}
           />
         </AppStack.Navigator>

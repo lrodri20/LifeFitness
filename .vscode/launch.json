@@ -2,6 +2,54 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug iOS - Experimental",
+            "request": "launch",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/SmartFitnessUI",
+            "platform": "ios"
+        },
+        {
+            "name": "Debug iOS",
+            "request": "launch",
+            "type": "reactnative",
+            "platform": "ios",
+            "cwd": "${workspaceFolder}/SmartFitnessUI"
+        },
+        {
+            "name": "Debug Android",
+            "request": "launch",
+            "type": "reactnative",
+            "platform": "android",
+            "cwd": "${workspaceFolder}/SmartFitnessUI"
+        },
+        {
+            "name": "Attach to packager",
+            "request": "attach",
+            "type": "reactnative",
+            "cwd": "${workspaceFolder}/SmartFitnessUI"
+        },
+        {
+            "name": "Debug Web",
+            "request": "launch",
+            "type": "reactnative",
+            "platform": "web",
+            "cwd": "${workspaceFolder}/SmartFitnessUI"
+        },
+        {
+            "name": "Debug Windows",
+            "request": "launch",
+            "type": "reactnative",
+            "platform": "windows",
+            "cwd": "${workspaceFolder}/SmartFitnessUI"
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickProcess}",
+            "justMyCode": true
+        },
+        {
             "name": ".NET Core Launch (web)",
             "type": "coreclr",
             "request": "launch",

@@ -2,7 +2,7 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use require to ensure jwtDecode is available
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from "jwt-decode"
 
 export const AuthContext = createContext();
 

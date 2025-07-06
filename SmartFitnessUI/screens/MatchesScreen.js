@@ -6,9 +6,10 @@
  * Displays a Tinder-style swipe deck of profile cards fetched from Unsplash.
  * Users can swipe right to "like" or left to "pass".
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
-
+import { AuthContext } from '../context/AuthContext';
+import exampleImage from '../images/example1.avif'; // Placeholder image for card
 // Monkey-patch React.PropTypes for deck-swiper compatibility
 if (!React.PropTypes) React.PropTypes = PropTypes;
 
@@ -37,8 +38,12 @@ import {
     StyleSheet,
     Dimensions,
     SafeAreaView,
-    ActivityIndicator
+    ActivityIndicator,
+    TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import FilterModal from '../components/FilterModal';
+import SortModal from '../components/SortModal';
 
 // Get device width for responsive card sizing
 const { width } = Dimensions.get('window');
@@ -50,41 +55,53 @@ const UNSPLASH_ACCESS_KEY = 'Aslkw0ARwU8C-fquxYYCm8Ejc7X0X8LGLyeUn6o8plE';
 const UNSPLASH_URL =
     `https://api.unsplash.com/photos/random?count=4&query=portrait&client_id=${UNSPLASH_ACCESS_KEY}`;
 // -----------------------------------------------------------------------------
-
+const API_URL = 'http://localhost:5199';
 export default function MatchesScreen() {
+    const { userToken } = useContext(AuthContext);
     // State: array of profile objects, and loading flag
     const [cards, setCards] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filterVisible, setFilterVisible] = useState(false);
+    const [sortVisible, setSortVisible] = useState(false);
+    const [sortBy, setSortBy] = useState('Recent');
 
     // On mount, fetch random portrait images from Unsplash
     useEffect(() => {
-        fetch(UNSPLASH_URL)
-            .then(res => res.json())
-            .then(data => {
-                // Map Unsplash response into our profile format
-                const profiles = data.map(photo => ({
-                    id: photo.id,
-                    name: `${photo.user.first_name} ${photo.user.last_name || ''}`.trim()
-                        + `, ${getRandomAge()}`,
-                    image: photo.urls.regular,
-                    bio: photo.user.bio || 'Hello there!',
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const url = `${API_URL}/api/matches?sortBy=${encodeURIComponent(sortBy)}`;
+                const resp = await fetch(url, {
+                    headers: { Authorization: `Bearer ${userToken}` }
+                });
+                const result = await resp.json();
+                const matches = result.matches || [];
+                // 2) Fetch Unsplash images equal to matches count
+                const imgRes = await fetch(
+                    `https://api.unsplash.com/photos/random?count=${matches.length}&query=portrait&client_id=${UNSPLASH_ACCESS_KEY}`
+                );
+                const photos = await imgRes.json();
+
+                // 3) Combine
+                const profiles = matches.map((m, i) => ({
+                    id: m.partner.userId,
+                    name: m.partner.displayName || 'Unknown',
+                    bio: m.partner.bio || 'No bio available',
+                    city: m.partner.city || 'Unknown City',
+                    age: m.partner.age || getRandomAge(),
+                    state: m.partner.state || 'Unknown State',
+                    distance: m.partner.distance || Math.floor(Math.random() * 100) + 1, // Random distance
                 }));
+
                 setCards(profiles);
-            })
-            .catch(err => {
-                console.warn('Unsplash fetch error:', err);
-                // Fallback: use static placeholder if API call fails
-                setCards([
-                    {
-                        id: 'fallback-1',
-                        name: 'Fallback User, 29',
-                        image: 'https://placekitten.com/400/500',
-                        bio: 'Unable to load images from Unsplash.',
-                    },
-                ]);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+            } catch (err) {
+                console.warn('Matches load error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [userToken, sortBy]);
 
     /**
      * getRandomAge
@@ -97,9 +114,12 @@ export default function MatchesScreen() {
      * Callback when a card is swiped right ("like").
      */
     const onSwipedRight = index => {
-        const matched = cards[index];
-        console.log('Matched with:', matched.name);
-        // TODO: send match event to backend
+        const match = cards[index];
+        // call backend to record like
+        fetch(`${API_URL}/api/Matches/${match.id}/like`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${userToken}` }
+        }).catch(console.error);
     };
 
     /**
@@ -112,16 +132,20 @@ export default function MatchesScreen() {
      * renderCard
      * Renders each card component from the `cards` array.
      */
-    const renderCard = card => (
-        <View style={styles.card} key={card.id}>
-            <Image source={{ uri: card.image }} style={styles.cardImage} />
-            <View style={styles.cardDetails}>
-                <Text style={styles.cardName}>{card.name}</Text>
-                <Text style={styles.cardBio}>{card.bio}</Text>
-            </View>
-        </View>
-    );
-
+    const renderCard = card => {
+        // guard against undefined or empty cards
+        if (card) {
+            return (
+                <View style={styles.card} key={card.id}>
+                    <Image source={exampleImage} style={styles.cardImage} />
+                    <View style={styles.infoOverlay}>
+                        <Text style={styles.nameText}>{card.name}, <Text style={styles.ageText}>{card.age}</Text></Text>
+                        <Text style={styles.locationText}>{card.city}, {card.state}</Text>
+                    </View>
+                </View>
+            );
+        }
+    }
     // Show loading spinner while fetching images
     if (loading) {
         return (
@@ -134,6 +158,14 @@ export default function MatchesScreen() {
     // Main render: the Swiper deck inside a SafeAreaView
     return (
         <SafeAreaView style={styles.container}>
+            <View style={styles.searchRow}>
+                <TouchableOpacity onPress={() => setFilterVisible(true)} style={styles.filterBtn}>
+                    <Ionicons name="filter-outline" size={24} color="#555" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setSortVisible(true)} style={styles.sortBtn}>
+                    <Text style={styles.sortText}>{sortBy} <Ionicons name="chevron-down-outline" size={16} /></Text>
+                </TouchableOpacity>
+            </View>
             <Swiper
                 cards={cards}
                 renderCard={renderCard}
@@ -183,6 +215,22 @@ export default function MatchesScreen() {
                 }}
                 containerStyle={styles.swiper}
             />
+            <FilterModal
+                visible={filterVisible}
+                onClose={() => setFilterVisible(false)}
+                onApply={(filters) => {
+                    console.log(filters);
+                    setFilterVisible(false);
+                    // Apply your filters...
+                }}
+            />
+            <SortModal
+                visible={sortVisible}
+                initial={sortBy}
+                onClose={() => setSortVisible(false)}
+                onSelect={value => setSortBy(value)}
+            />
+
         </SafeAreaView>
     );
 }
@@ -211,28 +259,55 @@ const styles = StyleSheet.create({
         width: width * 0.9,
         height: width * 1.1,
         borderRadius: 16,
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
+        backgroundColor: '#fff',
         overflow: 'hidden',
+        elevation: 3,
     },
     cardImage: {
         width: '100%',
-        height: '75%',
+        height: '100%',
     },
-    cardDetails: {
+    infoOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
         padding: 16,
+        backgroundColor: 'rgba(0,0,0,0.4)',
     },
-    cardName: {
-        fontSize: 22,
+    nameText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    ageText: {
         fontWeight: '600',
-        marginBottom: 8,
+        color: '#fff',
     },
-    cardBio: {
+    locationText: {
+        fontSize: 16,
+        color: '#fff',
+        marginTop: 4,
+    },
+    container: { flex: 1, backgroundColor: '#f9f9f9', paddingTop: 32 },
+    searchRow: { flexDirection: 'row', alignItems: 'center', margin: 16 },
+    searchInput: { flex: 1, height: 40, borderColor: '#ccc', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12 },
+    filterBtn: { marginLeft: 8 },
+    sortBtn: {
+        marginLeft: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    sortText: {
         fontSize: 14,
-        color: '#555',
+        color: '#333',
+        marginRight: 4,
     },
+
 });

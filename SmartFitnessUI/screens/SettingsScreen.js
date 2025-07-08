@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { API_URL } from '../config';
 import { AuthContext } from '../context/AuthContext';
-
+import exampleImage from '../images/example1.avif';
 export default function SettingsScreen({ navigation }) {
     const { signOut, userToken } = useContext(AuthContext);
 
@@ -110,7 +110,6 @@ export default function SettingsScreen({ navigation }) {
             });
             const result = await resp.json();
             if (!resp.ok) throw new Error(result.message || 'Save failed');
-            Alert.alert('Success', 'Profile updated');
         } catch (e) {
             Alert.alert('Error', e.message);
         } finally {
@@ -130,9 +129,9 @@ export default function SettingsScreen({ navigation }) {
                     <Text style={styles.heading}>Profile Settings</Text>
                     <TouchableOpacity style={styles.photoContainer} onPress={pickImage}>
                         {profilePictureUrl ? (
-                            <Image source={{ uri: profilePictureUrl }} style={styles.photo} />
+                            <Image source={exampleImage} style={styles.photo} />
                         ) : (
-                            <Text style={styles.photoPlaceholder}>Tap to select photo</Text>
+                            <Image source={exampleImage} style={styles.photo} />
                         )}
                     </TouchableOpacity>
 

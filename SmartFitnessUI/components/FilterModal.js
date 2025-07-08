@@ -94,7 +94,6 @@ export default function FilterModal({ visible, onClose, onApply, title = 'Filter
                 body: JSON.stringify(payload)
             });
             if (!resp.ok) throw new Error('Save failed');
-            Alert.alert('Success', 'Preferences saved');
             onApply && onApply(payload);
             onClose();
         } catch (err) {

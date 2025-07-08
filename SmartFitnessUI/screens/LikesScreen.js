@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-
+import exampleImage from '../images/example1.avif';
 // Dummy data - replace with API call response
 const DUMMY_LIKES = [
     { id: '1', name: 'Jordan, 26', image: 'https://placekitten.com/200/200' },
@@ -26,7 +26,7 @@ export default function LikesScreen() {
 
     const renderItem = ({ item }) => (
         <View style={styles.card} key={item.id}>
-            <Image source={{ uri: item.image }} style={styles.avatar} />
+            <Image source={exampleImage} style={styles.avatar} />
             <Text style={styles.name}>{item.name}</Text>
             <TouchableOpacity style={styles.button} onPress={() => {/* Navigate to profile or match back */ }}>
                 <Text style={styles.buttonText}>View</Text>

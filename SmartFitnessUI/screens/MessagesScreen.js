@@ -11,7 +11,7 @@ import {
     ActivityIndicator
 } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-
+import exampleImage from '../images/example1.avif';
 // Dummy chat data; replace with real API response
 const DUMMY_CHATS = [
     {
@@ -58,7 +58,7 @@ export default function MessagesScreen({ navigation }) {
             style={styles.chatCard}
             onPress={() => navigation.navigate('Chat', { chatId: item.id })}
         >
-            <Image source={{ uri: item.image }} style={styles.avatar} />
+            <Image source={exampleImage} style={styles.avatar} />
             <View style={styles.chatInfo}>
                 <View style={styles.chatHeader}>
                     <Text style={styles.name}>{item.name}</Text>

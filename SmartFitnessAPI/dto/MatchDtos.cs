@@ -260,4 +260,30 @@ namespace SmartFitnessApi.Data.Dtos
         public int MaxGroupSize { get; set; }
         public List<ActivityDto> Activities { get; set; } = new();
     }
+    public class LikeDto
+    {
+        public int LikeId { get; set; }
+        public int FromUserId { get; set; }
+        public int ToUserId { get; set; }
+        public DateTime LikedAt { get; set; }
+    }
+    /// <summary>
+    /// Result of a like operation: either a pending like or a mutual match.
+    /// </summary>
+    public class LikeResultDto
+    {
+        public bool IsMatch { get; set; }
+        public LikeDto? Like { get; set; }
+        public MatchDto? Match { get; set; }
+    }
+    /// <summary>
+    /// Represents an incoming "like" from another user.
+    /// </summary>
+    public class IncomingLikeDto
+    {
+        public int LikeId { get; set; }
+        public int FromUserId { get; set; }
+        public DateTime LikedAt { get; set; }
+        public PartnerDto From { get; set; } = null!;
+    }
 }

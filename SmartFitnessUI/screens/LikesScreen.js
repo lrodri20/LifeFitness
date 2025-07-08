@@ -1,15 +1,19 @@
 // src/screens/LikesScreen.js
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    FlatList,
+    Image,
+    TouchableOpacity,
+    StyleSheet,
+    SafeAreaView,
+    ActivityIndicator
+} from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import exampleImage from '../images/example1.avif';
-// Dummy data - replace with API call response
-const DUMMY_LIKES = [
-    { id: '1', name: 'Jordan, 26', image: 'https://placekitten.com/200/200' },
-    { id: '2', name: 'Taylor, 29', image: 'https://placekitten.com/201/200' },
-    { id: '3', name: 'Morgan, 24', image: 'https://placekitten.com/202/200' },
-    { id: '4', name: 'Casey, 31', image: 'https://placekitten.com/203/200' },
-];
+
+const API_URL = 'http://localhost:5199';
 
 export default function LikesScreen() {
     const { userToken } = useContext(AuthContext);
@@ -17,12 +21,31 @@ export default function LikesScreen() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // TODO: Replace with real API fetch: fetch(`/api/likes`, { headers: { Authorization: `Bearer ${userToken}` } })
-        setTimeout(() => {
-            setLikes(DUMMY_LIKES);
-            setLoading(false);
-        }, 1000);
-    }, []);
+        const loadLikes = async () => {
+            setLoading(true);
+            try {
+                const resp = await fetch(`${API_URL}/api/match-requests/incoming`, {
+                    headers: { Authorization: `Bearer ${userToken}` }
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || 'Failed to load likes');
+
+                // Map API LikeDto to UI model
+                const list = data.map(like => ({
+                    id: like.likeId.toString(),
+                    name: like.from.displayName + ', ' + (like.from.age || ''),
+                    image: like.from.profilePictureUrl || exampleImage,
+                }));
+                setLikes(list);
+            } catch (err) {
+                console.warn('Failed to fetch likes:', err);
+                setLikes([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (userToken) loadLikes();
+    }, [userToken]);
 
     const renderItem = ({ item }) => (
         <View style={styles.card} key={item.id}>
@@ -62,13 +85,8 @@ export default function LikesScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    list: {
-        padding: 16,
-    },
+    container: { flex: 1, backgroundColor: '#fff' },
+    list: { padding: 16 },
     card: {
         flex: 1,
         alignItems: 'center',
@@ -95,17 +113,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderRadius: 20,
     },
-    buttonText: {
-        color: '#fff',
-        fontSize: 14,
-    },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    emptyText: {
-        color: '#555',
-        fontSize: 16,
-    },
+    buttonText: { color: '#fff', fontSize: 14 },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    emptyText: { color: '#555', fontSize: 16 },
 });

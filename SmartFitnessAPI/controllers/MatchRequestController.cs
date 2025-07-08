@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartFitnessApi.Data.Dtos;
 using SmartFitnessApi.Models;
 using SmartFitnessApi.Services;
 
@@ -12,9 +13,11 @@ namespace SmartFitnessApi.Controllers
     public class MatchRequestController : ControllerBase
     {
         private readonly IMatchRequestService _matchRequestService;
+        private readonly ILikeService _likeService;
 
-        public MatchRequestController(IMatchRequestService matchRequestService)
+        public MatchRequestController(IMatchRequestService matchRequestService, ILikeService likeService)
         {
+            _likeService = likeService;
             _matchRequestService = matchRequestService;
         }
 
@@ -95,6 +98,43 @@ namespace SmartFitnessApi.Controllers
             });
 
             return Ok(dtoList);
+        }
+        /// <summary>
+        /// Swipe right / like another user; if they already liked you, returns a MatchDto.
+        /// </summary>
+        [HttpPost("{targetUserId}/like")]
+        public async Task<ActionResult<object>> Like(int targetUserId)
+        {
+            var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(sub, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                var result = await _likeService.CreateLikeAsync(userId, targetUserId);
+                if (result.IsMatch)
+                    return Ok(result.Match);
+                else
+                    return Ok(result.Like);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        /// <summary>
+        /// GET /api/likes/incoming
+        /// Returns a list of pending likes received by the current user.
+        /// </summary>
+        [HttpGet("incoming")]
+        public async Task<ActionResult<IEnumerable<IncomingLikeDto>>> GetIncoming()
+        {
+            var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(sub, out var userId))
+                return Unauthorized();
+
+            var likes = await _likeService.GetIncomingLikesAsync(userId);
+            return Ok(likes);
         }
     }
 }

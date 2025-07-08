@@ -22,6 +22,8 @@ namespace SmartFitnessApi.Data
         public DbSet<ProfileSchedule> ProfileSchedules { get; set; }
         public DbSet<MatchingPreference> MatchingPreferences { get; set; }
         public DbSet<ProfileActivity> ProfileActivities { get; set; } = null!;
+        public DbSet<Match> Matches { get; set; } = null!;
+        public DbSet<Message> Messages { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // everything without an explicit schema now uses "auth"
@@ -96,6 +98,42 @@ namespace SmartFitnessApi.Data
                          .HasForeignKey(pa => pa.ActivityId)
                          .OnDelete(DeleteBehavior.Cascade);
                });
+            modelBuilder.Entity<Match>(b =>
+         {
+             b.HasKey(m => m.Id);
+             b.ToTable("Matches");
+             b.Property(m => m.CreatedAt).IsRequired();
+
+             b.HasOne(m => m.User1)
+                 .WithMany(p => p.MatchesAsUser1)
+                 .HasForeignKey(m => m.User1Id)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+             b.HasOne(m => m.User2)
+                 .WithMany(p => p.MatchesAsUser2)
+                 .HasForeignKey(m => m.User2Id)
+                 .OnDelete(DeleteBehavior.Restrict);
+         });
+
+            // Messages between matched users
+            modelBuilder.Entity<Message>(b =>
+            {
+                b.HasKey(msg => msg.Id);
+                b.ToTable("Messages");
+                b.Property(msg => msg.SentAt).IsRequired();
+                b.Property(msg => msg.Content).IsRequired();
+
+                b.HasOne(msg => msg.Match)
+                    .WithMany(m => m.Messages)
+                    .HasForeignKey(msg => msg.MatchId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(msg => msg.Sender)
+                    .WithMany()
+                    .HasForeignKey(msg => msg.SenderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
             base.OnModelCreating(modelBuilder);
         }
     }

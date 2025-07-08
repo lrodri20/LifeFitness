@@ -50,5 +50,7 @@ namespace SmartFitnessApi.Models
         public ICollection<ProfileGoal> Goals { get; set; } = new List<ProfileGoal>();
         public ICollection<ProfileSchedule> Schedules { get; set; } = new List<ProfileSchedule>();
         public MatchingPreference? MatchingPreference { get; set; }
+        public ICollection<Match> MatchesAsUser1 { get; set; } = new List<Match>();
+        public ICollection<Match> MatchesAsUser2 { get; set; } = new List<Match>();
     }
 }

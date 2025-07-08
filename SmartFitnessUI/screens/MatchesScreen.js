@@ -66,6 +66,7 @@ export default function MatchesScreen() {
     const [sortBy, setSortBy] = useState('Recent');
     const [filters, setFilters] = useState({ minAge: null, maxAge: null, gender: null });
     // On mount, fetch random portrait images from Unsplash
+    const noCards = cards.length === 0;
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
@@ -109,9 +110,9 @@ export default function MatchesScreen() {
      * Callback when a card is swiped right ("like").
      */
     const onSwipedRight = index => {
+        if (noCards || !cards[index]) return;
         const match = cards[index];
-        // call backend to record like
-        fetch(`${API_URL}/api/Matches/${match.id}/like`, {
+        fetch(`${API_URL}/api/match-requests/${match.id}`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${userToken}` }
         }).catch(console.error);
@@ -155,6 +156,37 @@ export default function MatchesScreen() {
             </SafeAreaView>
         );
     }
+    // Only show swipe labels when there are cards
+    const overlayLabelsConfig = noCards
+        ? {}
+        : {
+            left: {
+                title: 'NOPE',
+                style: {
+                    label: { backgroundColor: 'red', color: 'white', fontSize: 24 },
+                    wrapper: {
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        justifyContent: 'flex-start',
+                        marginTop: 20,
+                        marginLeft: -20,
+                    },
+                },
+            },
+            right: {
+                title: 'LIKE',
+                style: {
+                    label: { backgroundColor: '#4CAF50', color: 'white', fontSize: 24 },
+                    wrapper: {
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        justifyContent: 'flex-start',
+                        marginTop: 20,
+                        marginLeft: 20,
+                    },
+                },
+            },
+        };
 
     // Main render: the Swiper deck inside a SafeAreaView
     return (
@@ -167,55 +199,28 @@ export default function MatchesScreen() {
                     <Text style={styles.sortText}>{sortBy} <Ionicons name="chevron-down-outline" size={16} /></Text>
                 </TouchableOpacity>
             </View>
-            <Swiper
-                cards={cards}
-                renderCard={renderCard}
-                onSwipedRight={onSwipedRight}
-                onSwipedAll={onSwipedAll}
-                cardIndex={0}
-                backgroundColor="transparent"
-                stackSize={3}
-                stackSeparation={15}
-                animateCardOpacity
-                verticalSwipe={false}
-                overlayLabels={{
-                    left: {
-                        title: 'NOPE',
-                        style: {
-                            label: {
-                                backgroundColor: 'red',
-                                color: 'white',
-                                fontSize: 24,
-                            },
-                            wrapper: {
-                                flexDirection: 'column',
-                                alignItems: 'flex-end',
-                                justifyContent: 'flex-start',
-                                marginTop: 20,
-                                marginLeft: -20,
-                            },
-                        },
-                    },
-                    right: {
-                        title: 'LIKE',
-                        style: {
-                            label: {
-                                backgroundColor: '#4CAF50',
-                                color: 'white',
-                                fontSize: 24,
-                            },
-                            wrapper: {
-                                flexDirection: 'column',
-                                alignItems: 'flex-start',
-                                justifyContent: 'flex-start',
-                                marginTop: 20,
-                                marginLeft: 20,
-                            },
-                        },
-                    },
-                }}
-                containerStyle={styles.swiper}
-            />
+            {noCards ? (
+                <View style={styles.noMatchesContainer}>
+                    <Text style={styles.noMatchesText}>No more matches available</Text>
+                </View>
+            ) : (
+                <Swiper
+                    cards={cards}
+                    renderCard={renderCard}
+                    onSwipedRight={onSwipedRight}
+                    onSwipedAll={onSwipedAll}
+                    cardIndex={0}
+                    backgroundColor="transparent"
+                    stackSize={3}
+                    stackSeparation={15}
+                    animateCardOpacity
+                    verticalSwipe={!noCards}
+                    disableRightSwipe={noCards}
+                    disableLeftSwipe={noCards}
+                    overlayLabels={overlayLabelsConfig}
+                    containerStyle={styles.swiper}
+                />
+            )}
             <FilterModal
                 visible={filterVisible}
                 onClose={() => setFilterVisible(false)}
@@ -306,5 +311,14 @@ const styles = StyleSheet.create({
         color: '#333',
         marginRight: 4,
     },
-
+    noMatchesContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 50,
+    },
+    noMatchesText: {
+        fontSize: 18,
+        color: '#999',
+    },
 });

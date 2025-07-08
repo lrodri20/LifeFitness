@@ -6,7 +6,7 @@
  * Displays a Tinder-style swipe deck of profile cards fetched from Unsplash.
  * Users can swipe right to "like" or left to "pass".
  */
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { AuthContext } from '../context/AuthContext';
 import exampleImage from '../images/example1.avif'; // Placeholder image for card
@@ -64,39 +64,40 @@ export default function MatchesScreen() {
     const [filterVisible, setFilterVisible] = useState(false);
     const [sortVisible, setSortVisible] = useState(false);
     const [sortBy, setSortBy] = useState('Recent');
-
+    const [filters, setFilters] = useState({ minAge: null, maxAge: null, gender: null });
     // On mount, fetch random portrait images from Unsplash
+    const loadData = useCallback(async () => {
+        setLoading(true);
+        try {
+            // build query params
+            const params = new URLSearchParams();
+            params.append('sortBy', sortBy.toLowerCase());
+            if (filters.minAge !== null) params.append('minAge', filters.minAge);
+            if (filters.maxAge !== null) params.append('maxAge', filters.maxAge);
+            if (filters.gender) params.append('gender', filters.gender);
+            const url = `${API_URL}/api/matches?${params.toString()}`;
+
+            const resp = await fetch(url, { headers: { Authorization: `Bearer ${userToken}` } });
+            const result = await resp.json();
+            const profiles = result.map(m => ({
+                id: m.partner.userId,
+                name: m.partner.displayName,
+                bio: m.partner.bio || 'No bio',
+                city: m.partner.city,
+                age: m.partner.age,
+                state: m.partner.state,
+                distance: m.partner.distanceMiles,
+            }));
+            setCards(profiles);
+        } catch (err) {
+            console.warn('Matches load error:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [userToken, sortBy, filters]);
     useEffect(() => {
-        const loadData = async () => {
-            setLoading(true);
-            try {
-                const url = `${API_URL}/api/matches?sortBy=${encodeURIComponent(sortBy)}`;
-                const resp = await fetch(url, {
-                    headers: { Authorization: `Bearer ${userToken}` }
-                });
-                const result = await resp.json();
-
-                // 3) Combine
-                const profiles = result.map((m, i) => ({
-                    id: m.partner.userId,
-                    name: m.partner.displayName || 'Unknown',
-                    bio: m.partner.bio || 'No bio available',
-                    city: m.partner.city || 'Unknown City',
-                    age: m.partner.age || getRandomAge(),
-                    state: m.partner.state || 'Unknown State',
-                    distance: m.partner.distance || Math.floor(Math.random() * 100) + 1, // Random distance
-                }));
-
-                setCards(profiles);
-            } catch (err) {
-                console.warn('Matches load error:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
         loadData();
-    }, [userToken, sortBy]);
-
+    }, [loadData]);
     /**
      * getRandomAge
      * Returns a random integer age between 22 and 45.
@@ -140,6 +141,12 @@ export default function MatchesScreen() {
             );
         }
     }
+    const handleApplyFilters = (newFilters) => {
+        setFilters(newFilters);
+        setFilterVisible(false);
+        // Immediately reload data with new filters
+        loadData();
+    };
     // Show loading spinner while fetching images
     if (loading) {
         return (
@@ -212,11 +219,7 @@ export default function MatchesScreen() {
             <FilterModal
                 visible={filterVisible}
                 onClose={() => setFilterVisible(false)}
-                onApply={(filters) => {
-                    console.log(filters);
-                    setFilterVisible(false);
-                    // Apply your filters...
-                }}
+                onApply={handleApplyFilters}
             />
             <SortModal
                 visible={sortVisible}

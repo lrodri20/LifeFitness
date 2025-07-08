@@ -25,7 +25,7 @@ import { API_URL } from '../config';
  *  - onClose: () => void
  *  - title?: string
  */
-export default function FilterModal({ visible, onClose, title = 'Filters' }) {
+export default function FilterModal({ visible, onClose, onApply, title = 'Filters' }) {
     const { userToken } = useContext(AuthContext);
 
     // Filter state
@@ -95,6 +95,8 @@ export default function FilterModal({ visible, onClose, title = 'Filters' }) {
             });
             if (!resp.ok) throw new Error('Save failed');
             Alert.alert('Success', 'Preferences saved');
+            onApply && onApply(payload);
+            onClose();
         } catch (err) {
             console.error('Failed to save preferences', err);
             Alert.alert('Error', err.message);

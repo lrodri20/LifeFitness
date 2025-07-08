@@ -2,6 +2,7 @@ namespace SmartFitnessApi.Services
 {
     using Microsoft.EntityFrameworkCore;
     using SmartFitnessApi.Data;
+    using SmartFitnessApi.Data.Dtos;
     using SmartFitnessApi.Models;
     using SmartFitnessApi.Models.enums;
     using System;
@@ -19,138 +20,60 @@ namespace SmartFitnessApi.Services
             _context = context;
         }
 
-        public async Task<ActiveMatchesResponseDto> GetActiveMatchesAsync(int userId, string sortBy, int limit, int offset)
+        public async Task<IEnumerable<MatchDto>> GetMatchesAsync(int userId, string sortBy = "compatibility")
         {
-            // Get user's profile
-            var userProfile = await _context.Profiles
-                .FirstOrDefaultAsync(p => p.UserId == userId);
+            // 1) Retrieve filtered candidates based on user preferences
+            var candidates = await _context.FindByPreferencesAsync(userId);
 
-            if (userProfile == null)
+            var results = new List<MatchDto>();
+
+            // 2) Build match list
+            foreach (var c in candidates)
             {
-                throw new InvalidOperationException("User profile not found.");
-            }
+                // Compute compatibility score (stubbed; implement your logic)
+                double score = ComputeCompatibility(userId, c);
 
-            // Query for active matches only (Status = Accepted)
-            var matchesQuery = _context.MatchRequests
-                .Include(m => m.Requester)
-                    .ThenInclude(p => p.User)
-                .Include(m => m.Requester)
-                    .ThenInclude(p => p.Activities)
-                        .ThenInclude(pa => pa.Activity)
-                .Include(m => m.Requester)
-                    .ThenInclude(p => p.Goals)
-                .Include(m => m.Requester)
-                    .ThenInclude(p => p.Schedules)
-                .Include(m => m.Requestee)
-                    .ThenInclude(p => p.User)
-                .Include(m => m.Requestee)
-                    .ThenInclude(p => p.Activities)
-                        .ThenInclude(pa => pa.Activity)
-                .Include(m => m.Requestee)
-                    .ThenInclude(p => p.Goals)
-                .Include(m => m.Requestee)
-                    .ThenInclude(p => p.Schedules)
-                .Where(m => (m.RequesterId == userProfile.Id || m.RequesteeId == userProfile.Id)
-                         && m.Status == MatchStatus.Accepted);
+                // Fetch shared activities
+                var shared = await _context.GetSharedActivitiesAsync(userId, c.UserId);
 
-            // Get total count
-            var totalCount = await matchesQuery.CountAsync();
-
-            // Get all matches for statistics
-            var allMatches = await matchesQuery.ToListAsync();
-
-            // Calculate statistics
-            var statistics = CalculateMatchStatistics(allMatches, userProfile.Id);
-
-            // Apply sorting
-            IOrderedQueryable<MatchRequest> orderedQuery = sortBy.ToLower() switch
-            {
-                "recent" => matchesQuery.OrderByDescending(m => m.RespondedAt ?? m.CreatedAt),
-                "compatibility" => matchesQuery.OrderByDescending(m => m.CompatibilityScore),
-                "interaction" => matchesQuery.OrderByDescending(m => m.LastInteractionAt ?? m.RespondedAt),
-                _ => matchesQuery.OrderByDescending(m => m.RespondedAt ?? m.CreatedAt) // default to date
-            };
-
-            // Apply pagination
-            var matches = await orderedQuery
-                .Skip(offset)
-                .Take(limit)
-                .ToListAsync();
-
-            // Map to DTOs
-            var matchDtos = new List<ActiveMatchDto>();
-            var now = DateTime.UtcNow;
-
-            foreach (var match in matches)
-            {
-                var isRequester = match.RequesterId == userProfile.Id;
-                var partner = isRequester ? match.Requestee : match.Requester;
-                var partnerUser = partner.User;
-
-                // Calculate distance
-                var distance = CalculateDistance(userProfile, partner);
-
-                // Parse shared activities
-                var sharedActivities = ParseSharedActivities(match.SharedActivitiesJson);
-
-                // Get availability
-                var availability = GetAvailability(partner.Schedules);
-
-                // Calculate match duration
-                var matchDate = match.RespondedAt ?? match.CreatedAt;
-                var matchDuration = GetDurationString(now - matchDate);
-
-                matchDtos.Add(new ActiveMatchDto
+                results.Add(new MatchDto
                 {
-                    MatchId = match.Id,
-                    MatchedAt = matchDate,
-                    LastInteraction = match.LastInteractionAt ?? matchDate,
-                    SharedActivities = sharedActivities,
-                    CompatibilityScore = match.CompatibilityScore,
-                    MatchDuration = matchDuration,
-                    IsRecentMatch = (now - matchDate).TotalDays <= 7,
-                    WorkoutCount = 0, // Placeholder for future feature
-                    Partner = new WorkoutPartnerDto
+                    MatchId = c.UserId,
+                    MatchedAt = DateTime.UtcNow,
+                    CompatibilityScore = score,
+                    Partner = new PartnerDto
                     {
-                        UserId = partner.UserId,
-                        ProfileId = partner.Id,
-                        DisplayName = partner.DisplayName ?? $"{partner.FirstName} {partner.LastName?[0]}.",
-                        Age = CalculateAge(partner.DateOfBirth),
-                        ProfilePictureUrl = partner.ProfilePictureUrl,
-                        Bio = partner.Bio,
-                        City = partner.City ?? "Unknown",
-                        State = partner.State ?? "",
-                        Distance = Math.Round(distance, 1),
-                        FitnessLevel = partner.FitnessLevel,
-                        Activities = partner.Activities.Select(a => a.Activity.Name).ToList(),
-                        Goals = partner.Goals.Select(g => g.Goal.ToString()).ToList(),
-                        HasHomeGym = partner.HasHomeGym,
-                        ContactInfo = new ContactInfoDto
-                        {
-                            PhoneNumber = partner.PhoneNumber,
-                            Email = partnerUser.Email,
-                            PreferredContactMethod = "In-app" // Could be stored in preferences
-                        },
-                        Availability = availability
+                        UserId = c.UserId,
+                        DisplayName = c.DisplayName,
+                        Age = c.Age,
+                        ProfilePictureUrl = c.ProfilePictureUrl,
+                        City = c.City,
+                        State = c.State,
+                        DistanceMiles = c.DistanceMiles,
+                        FitnessLevel = c.FitnessLevel,
                     },
-                    Interaction = new MatchInteractionDto
-                    {
-                        InitialMessage = match.InitialMessage ?? "",
-                        LastMessageAt = null, // Placeholder for messaging feature
-                        MessageCount = 0, // Placeholder
-                        LastWorkoutTogether = null, // Placeholder for workout tracking
-                        LastWorkoutActivity = null
-                    }
+                    SharedActivities = shared.Select(a => a.Name).ToList()
                 });
             }
 
-            return new ActiveMatchesResponseDto(
-     matchDtos,
-     totalCount,
-     offset,
-     limit,
-     statistics
- );
+            // 3) Sort results
+            var ordered = sortBy.ToLower() switch
+            {
+                "recent" => results.OrderByDescending(m => m.MatchedAt),
+                "compatibility" => results.OrderByDescending(m => m.CompatibilityScore),
+                "interaction" => results.OrderByDescending(m => m.SharedActivities?.Count() ?? 0),
+                _ => results.OrderByDescending(m => m.CompatibilityScore)
+            };
+
+            return ordered;
+        }
+
+        private double ComputeCompatibility(int userId, CandidateDto candidate)
+        {
+            // TODO: implement real compatibility logic based on preferences, activities, etc.
+            // Example placeholder: score by inverse distance + shared activities count
+            double distanceScore = Math.Max(0, 1 - (candidate.DistanceMiles / 50.0));
+            return distanceScore + (candidate.Activities?.Count ?? 0) * 0.1;
         }
 
         public async Task RemoveMatchAsync(int matchId, int userId)
@@ -208,15 +131,7 @@ namespace SmartFitnessApi.Services
 
         public async Task<ActiveMatchDto> GetMatchDetailsAsync(int matchId, int userId)
         {
-            var result = await GetActiveMatchesAsync(userId, "date", 1, 0);
-            var match = result.Matches.FirstOrDefault(m => m.MatchId == matchId);
-
-            if (match == null)
-            {
-                throw new InvalidOperationException("Match not found or not accessible.");
-            }
-
-            return match;
+            return null;
         }
 
         public async Task<int> GetActiveMatchCountAsync(int userId)

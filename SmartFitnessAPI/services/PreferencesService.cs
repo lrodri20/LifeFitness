@@ -2,6 +2,7 @@ namespace SmartFitnessApi.Services
 {
     using Microsoft.EntityFrameworkCore;
     using SmartFitnessApi.Data;
+    using SmartFitnessApi.Data.Dtos;
     using SmartFitnessApi.Models;
     using SmartFitnessApi.Models.enums;
     using System;
@@ -36,8 +37,8 @@ namespace SmartFitnessApi.Services
                     Id = 0,
                     ProfileId = profile.Id,
                     MaxDistanceMiles = 5,
-                    MinAge = null,
-                    MaxAge = null,
+                    MinAge = 18,
+                    MaxAge = 100,
                     GenderPreference = GenderPreference.Any.ToString(),
                     PreferSimilarFitnessLevel = true,
                     FitnessLevelTolerance = 1,
@@ -157,8 +158,8 @@ namespace SmartFitnessApi.Services
 
             // Reset to default values instead of removing
             profile.MatchingPreference.MaxDistanceMiles = 5;
-            profile.MatchingPreference.MinAge = null;
-            profile.MatchingPreference.MaxAge = null;
+            profile.MatchingPreference.MinAge = 18;
+            profile.MatchingPreference.MaxAge = 100;
             profile.MatchingPreference.GenderPreference = GenderPreference.Any;
             profile.MatchingPreference.PreferSimilarFitnessLevel = true;
             profile.MatchingPreference.FitnessLevelTolerance = 1;

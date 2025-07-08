@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartFitnessApi.Data.Dtos;
 using SmartFitnessApi.Models;
 using SmartFitnessApi.Services;
 using System;
@@ -16,31 +17,31 @@ namespace SmartFitnessApi.Controllers
     public class MatchesController : ControllerBase
     {
         private readonly IMatchService _matchService;
+        private readonly IPreferencesService _prefsService;
 
-        public MatchesController(IMatchService matchService)
+        public MatchesController(IMatchService matchService, IPreferencesService prefsService)
         {
             _matchService = matchService;
+            _prefsService = prefsService;
         }
         /// <summary>
         /// Get all active matches (accepted workout partners)
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<ActiveMatchesResponseDto>> GetActiveMatches(
-       [FromQuery] string sortBy = "recent",  // changed default to "recent"
-       [FromQuery] int limit = 50,
-       [FromQuery] int offset = 0)
+        public async Task<ActionResult<IEnumerable<MatchDto>>> GetMatches(
+             [FromQuery] string sortBy = "compatibility")
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                              ?? User.FindFirst("sub")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
 
-            try
-            {
-                var matches = await _matchService.GetActiveMatchesAsync(userId, sortBy, limit, offset);
-                return Ok(matches);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var prefs = await _prefsService.GetMatchingPreferencesAsync(userId);
+            if (prefs == null)
+                return NotFound("Preferences not set");
+
+            var matches = await _matchService.GetMatchesAsync(userId, sortBy);
+            return Ok(matches);
         }
 
         /// <summary>

@@ -1,5 +1,5 @@
 // src/components/FilterModal.js
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Modal,
     View,
@@ -8,10 +8,13 @@ import {
     ScrollView,
     StyleSheet,
     Switch,
+    Alert
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
+import { AuthContext } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 /**
  * FilterModal
@@ -20,10 +23,11 @@ import { Ionicons } from '@expo/vector-icons';
  * Props:
  *  - visible: boolean
  *  - onClose: () => void
- *  - onApply: (filters: object) => void
  *  - title?: string
  */
-export default function FilterModal({ visible, onClose, onApply, title = 'Filters' }) {
+export default function FilterModal({ visible, onClose, title = 'Filters' }) {
+    const { userToken } = useContext(AuthContext);
+
     // Filter state
     const [maxDistanceMiles, setMaxDistanceMiles] = useState(100);
     const [minAge, setMinAge] = useState(18);
@@ -37,9 +41,37 @@ export default function FilterModal({ visible, onClose, onApply, title = 'Filter
     const [openToGroupWorkouts, setOpenToGroupWorkouts] = useState(true);
     const [maxGroupSize, setMaxGroupSize] = useState(20);
 
-    // Apply and pass back filter selections
-    const applyFilters = () => {
-        onApply({
+    // Load existing preferences when modal opens
+    useEffect(() => {
+        if (!visible || !userToken) return;
+        (async () => {
+            try {
+                const resp = await fetch(`${API_URL}/api/Preferences`, {
+                    headers: { Authorization: `Bearer ${userToken}` }
+                });
+                const prefs = await resp.json();
+                if (resp.ok) {
+                    setMaxDistanceMiles(prefs.maxDistanceMiles ?? 100);
+                    setMinAge(prefs.minAge ?? 18);
+                    setMaxAge(prefs.maxAge ?? 30);
+                    setGenderPreference(prefs.genderPreference ?? 'Any');
+                    setPreferSimilarFitnessLevel(prefs.preferSimilarFitnessLevel ?? true);
+                    setFitnessLevelTolerance(prefs.fitnessLevelTolerance ?? 3);
+                    setPreferHomeGym(prefs.preferHomeGym ?? true);
+                    setPreferPublicGym(prefs.preferPublicGym ?? true);
+                    setPreferOutdoor(prefs.preferOutdoor ?? true);
+                    setOpenToGroupWorkouts(prefs.openToGroupWorkouts ?? true);
+                    setMaxGroupSize(prefs.maxGroupSize ?? 20);
+                }
+            } catch (err) {
+                console.warn('Failed to load preferences', err);
+            }
+        })();
+    }, [visible, userToken]);
+
+    // Apply and save preferences via API then close
+    const applyFilters = async () => {
+        const payload = {
             maxDistanceMiles,
             minAge,
             maxAge,
@@ -51,7 +83,22 @@ export default function FilterModal({ visible, onClose, onApply, title = 'Filter
             preferOutdoor,
             openToGroupWorkouts,
             maxGroupSize,
-        });
+        };
+        try {
+            const resp = await fetch(`${API_URL}/api/Preferences`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${userToken}`
+                },
+                body: JSON.stringify(payload)
+            });
+            if (!resp.ok) throw new Error('Save failed');
+            Alert.alert('Success', 'Preferences saved');
+        } catch (err) {
+            console.error('Failed to save preferences', err);
+            Alert.alert('Error', err.message);
+        }
         onClose();
     };
 
@@ -78,7 +125,7 @@ export default function FilterModal({ visible, onClose, onApply, title = 'Filter
                             <Slider
                                 style={styles.slider}
                                 minimumValue={0}
-                                maximumValue={200}
+                                maximumValue={100}
                                 step={1}
                                 value={maxDistanceMiles}
                                 onValueChange={setMaxDistanceMiles}

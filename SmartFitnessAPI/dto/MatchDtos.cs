@@ -1,8 +1,9 @@
 // DTOs
 using System.ComponentModel.DataAnnotations;
+using SmartFitnessApi.Models;
 using SmartFitnessApi.Models.enums;
 
-namespace SmartFitnessApi.Models
+namespace SmartFitnessApi.Data.Dtos
 {
     /// <summary>
     /// DTO for returning matching preferences
@@ -16,8 +17,8 @@ namespace SmartFitnessApi.Models
         public int MaxDistanceMiles { get; set; }
 
         // Age Preferences
-        public int? MinAge { get; set; }
-        public int? MaxAge { get; set; }
+        public int MinAge { get; set; }
+        public int MaxAge { get; set; }
 
         // Gender Preferences
         public string GenderPreference { get; set; } = "Any";
@@ -48,10 +49,10 @@ namespace SmartFitnessApi.Models
         public int MaxDistanceMiles { get; set; } = 5;
 
         [Range(18, 100, ErrorMessage = "Minimum age must be at least 18")]
-        public int? MinAge { get; set; }
+        public int MinAge { get; set; }
 
         [Range(18, 100, ErrorMessage = "Maximum age must be between 18 and 100")]
-        public int? MaxAge { get; set; }
+        public int MaxAge { get; set; }
 
         [RegularExpression("^(Any|Same|Different)$", ErrorMessage = "Gender preference must be 'Any', 'Same', or 'Different'")]
         public string GenderPreference { get; set; } = "Any";
@@ -73,7 +74,7 @@ namespace SmartFitnessApi.Models
         // Custom validation
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (MinAge.HasValue && MaxAge.HasValue && MinAge > MaxAge)
+            if (MinAge > MaxAge)
             {
                 yield return new ValidationResult(
                     "Minimum age cannot be greater than maximum age",
@@ -206,5 +207,57 @@ namespace SmartFitnessApi.Models
         /// True if this day is tomorrow (based on server local date).
         /// </summary>
         public bool IsTomorrow { get; init; }
+    }
+    public class MatchDto
+    {
+        public int MatchId { get; set; }
+        public DateTime MatchedAt { get; set; }
+        public double CompatibilityScore { get; set; }
+        public PartnerDto Partner { get; set; }
+        public List<string> SharedActivities { get; set; }
+    }
+
+    public class PartnerDto
+    {
+        public int UserId { get; set; }
+        public string DisplayName { get; set; }
+        public int Age { get; set; }
+        public string ProfilePictureUrl { get; set; }
+        public string City { get; set; }
+        public string State { get; set; }
+        public double DistanceMiles { get; set; }
+        public int FitnessLevel { get; set; }
+        public List<string> Activities { get; set; }
+    }
+
+    public class PreferencesDto
+    {
+        public int MaxDistanceMiles { get; set; }
+        public int MinAge { get; set; }
+        public int MaxAge { get; set; }
+        public string GenderPreference { get; set; }
+        public bool PreferSimilarFitnessLevel { get; set; }
+        public int FitnessLevelTolerance { get; set; }
+        public bool PreferHomeGym { get; set; }
+        public bool PreferPublicGym { get; set; }
+        public bool PreferOutdoor { get; set; }
+        public bool OpenToGroupWorkouts { get; set; }
+        public int MaxGroupSize { get; set; }
+    }
+    public class CandidateDto
+    {
+        public int UserId { get; set; }
+        public string DisplayName { get; set; } = "";
+        public int Age { get; set; }
+        public string ProfilePictureUrl { get; set; } = "";
+        public string City { get; set; } = "";
+        public string State { get; set; } = "";
+        public double DistanceMiles { get; set; }
+        public int FitnessLevel { get; set; }
+        public bool HasHomeGym { get; set; }
+        public bool HasPublicGym { get; set; }
+        public bool PrefersOutdoor { get; set; }
+        public int MaxGroupSize { get; set; }
+        public List<ActivityDto> Activities { get; set; } = new();
     }
 }

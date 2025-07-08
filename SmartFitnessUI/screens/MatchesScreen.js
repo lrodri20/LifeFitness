@@ -75,15 +75,9 @@ export default function MatchesScreen() {
                     headers: { Authorization: `Bearer ${userToken}` }
                 });
                 const result = await resp.json();
-                const matches = result.matches || [];
-                // 2) Fetch Unsplash images equal to matches count
-                const imgRes = await fetch(
-                    `https://api.unsplash.com/photos/random?count=${matches.length}&query=portrait&client_id=${UNSPLASH_ACCESS_KEY}`
-                );
-                const photos = await imgRes.json();
 
                 // 3) Combine
-                const profiles = matches.map((m, i) => ({
+                const profiles = result.map((m, i) => ({
                     id: m.partner.userId,
                     name: m.partner.displayName || 'Unknown',
                     bio: m.partner.bio || 'No bio available',

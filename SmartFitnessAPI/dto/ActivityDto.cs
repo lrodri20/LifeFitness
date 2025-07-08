@@ -7,5 +7,6 @@ namespace SmartFitnessApi.Models
         public TimeSpan Duration { get; set; }
         public int CaloriesBurned { get; set; }
         public DateTime Date { get; set; }
+        public string Name { get; set; }
     }
 }

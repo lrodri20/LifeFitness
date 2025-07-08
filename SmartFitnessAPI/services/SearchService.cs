@@ -106,20 +106,16 @@ namespace SmartFitnessApi.Services
                 .Where(p => p.Distance <= searchRadius)
                 .ToList();
 
-            // Apply age filter from preferences
-            if (preferences.MinAge.HasValue || preferences.MaxAge.HasValue)
-            {
-                var today = DateTime.Today;
-                profilesWithDistance = profilesWithDistance
-                    .Where(p => p.Profile.DateOfBirth.HasValue)
-                    .Where(p =>
-                    {
-                        var age = CalculateAge(p.Profile.DateOfBirth);
-                        return (!preferences.MinAge.HasValue || age >= preferences.MinAge.Value) &&
-                               (!preferences.MaxAge.HasValue || age <= preferences.MaxAge.Value);
-                    })
-                    .ToList();
-            }
+            var today = DateTime.Today;
+            profilesWithDistance = profilesWithDistance
+    .Where(p =>
+    {
+        var age = CalculateAge(p.Profile.DateOfBirth);
+        return age >= preferences.MinAge && age <= preferences.MaxAge;
+    })
+    .ToList();
+
+
 
             // Calculate compatibility and create results
             var results = new List<PotentialMatchDto>();

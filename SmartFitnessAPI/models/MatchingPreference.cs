@@ -14,8 +14,8 @@ namespace SmartFitnessApi.Models
         public int MaxDistanceMiles { get; set; } = 5;
 
         // Age Preferences
-        public int? MinAge { get; set; }
-        public int? MaxAge { get; set; }
+        public int MinAge { get; set; }
+        public int MaxAge { get; set; }
 
         // Gender Preferences
         public GenderPreference GenderPreference { get; set; } = GenderPreference.Any;

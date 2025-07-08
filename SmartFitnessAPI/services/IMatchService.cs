@@ -1,10 +1,11 @@
+using SmartFitnessApi.Data.Dtos;
 using SmartFitnessApi.Models;
 
 namespace SmartFitnessApi.Services
 {
     public interface IMatchService
     {
-        Task<ActiveMatchesResponseDto> GetActiveMatchesAsync(int userId, string sortBy, int limit, int offset);
+        Task<IEnumerable<MatchDto>> GetMatchesAsync(int userId, string sortBy = "compatibility");
         Task RemoveMatchAsync(int matchId, int userId);
         Task BlockUserAsync(int matchId, int userId);
         Task<ActiveMatchDto> GetMatchDetailsAsync(int matchId, int userId);

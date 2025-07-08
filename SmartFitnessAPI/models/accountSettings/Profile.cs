@@ -41,6 +41,11 @@ namespace SmartFitnessApi.Models
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation Properties
+        // Navigation Properties
+        /// <summary>
+        /// Holds the many-to-many join to activities.
+        /// </summary>
+        public ICollection<ProfileActivity> ProfileActivities { get; set; } = new List<ProfileActivity>();
         public ICollection<ProfileActivity> Activities { get; set; } = new List<ProfileActivity>();
         public ICollection<ProfileGoal> Goals { get; set; } = new List<ProfileGoal>();
         public ICollection<ProfileSchedule> Schedules { get; set; } = new List<ProfileSchedule>();

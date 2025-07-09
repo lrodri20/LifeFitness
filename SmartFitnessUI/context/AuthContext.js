@@ -78,7 +78,6 @@ export function AuthProvider({ children }) {
         signOut: async () => {
             await AsyncStorage.removeItem('userToken');
             dispatch({ type: 'SIGN_OUT' });
-            resetToSignIn();
         },
     };
 

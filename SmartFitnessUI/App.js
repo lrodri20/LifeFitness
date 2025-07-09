@@ -4,6 +4,7 @@ import { TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { navigationRef } from './navigation/NavigationService';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -58,6 +59,7 @@ function MainTabs() {
       <Tab.Screen name="Likes" component={LikesScreen} />
       <Tab.Screen name="Activities" component={HomeScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
+
     </Tab.Navigator>
   );
 }
@@ -71,7 +73,7 @@ function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       {userToken == null ? (
         <AuthStack.Navigator screenOptions={{ headerShown: false }}>
           <AuthStack.Screen name="SignIn" component={SignInScreen} />

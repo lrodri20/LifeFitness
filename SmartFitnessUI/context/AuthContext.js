@@ -3,6 +3,7 @@ import React, { createContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Use require to ensure jwtDecode is available
 import { jwtDecode } from "jwt-decode"
+import { resetToSignIn } from '../navigation/NavigationService';
 
 export const AuthContext = createContext();
 
@@ -77,6 +78,7 @@ export function AuthProvider({ children }) {
         signOut: async () => {
             await AsyncStorage.removeItem('userToken');
             dispatch({ type: 'SIGN_OUT' });
+            resetToSignIn();
         },
     };
 

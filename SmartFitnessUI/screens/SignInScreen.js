@@ -1,20 +1,25 @@
 // src/screens/SignInScreen.js
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    Alert
+    Alert,
+    TouchableWithoutFeedback
 } from 'react-native';
 import { API_URL } from '../config';
 import { AuthContext } from '../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 function SignInScreen({ navigation }) {
+    const emailRef = useRef(null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { signIn } = useContext(AuthContext);
+    const [showPassword, setShowPassword] = useState(false);
+
     const handleSignIn = async () => {
         setLoading(true);
         try {
@@ -49,21 +54,39 @@ function SignInScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Sign In</Text>
-            <TextInput
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                style={styles.input}
-                keyboardType="email-address"
-                autoCapitalize="none"
-            />
-            <TextInput
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                style={styles.input}
-                secureTextEntry
-            />
+            <TouchableWithoutFeedback onPress={() => emailRef.current?.focus()}>
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        ref={emailRef}
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="Email"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        style={styles.input}
+                    />
+                </View>
+            </TouchableWithoutFeedback>
+            <View style={styles.passwordContainer}>
+                <TextInput
+                    placeholder="Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    style={[styles.input, { flex: 1 }]}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                />
+                <TouchableOpacity
+                    onPress={() => setShowPassword(v => !v)}
+                    style={styles.eyeButton}
+                >
+                    <Ionicons
+                        name={showPassword ? 'eye' : 'eye-off'}
+                        size={20}
+                        color="#666"
+                    />
+                </TouchableOpacity>
+            </View>
             <TouchableOpacity
                 onPress={handleSignIn}
                 style={styles.button}
@@ -130,5 +153,44 @@ const styles = StyleSheet.create({
     },
     marginTop: {
         marginTop: 8,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+    },
+    emailContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+    },
+    eyeButton: {
+        marginLeft: 8,
+    },
+    input: {
+        height: 48,
+        // no border here—container handles it
+    },
+    inputContainer: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        height: 48,
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    inputInner: {
+        flex: 1,
+        padding: 0,        // remove default vertical padding
+        margin: 0,         // remove default margin
     },
 });

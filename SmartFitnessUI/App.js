@@ -1,7 +1,7 @@
 // App.js
 import React, { useContext } from 'react';
 import { TouchableOpacity } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { navigationRef } from './navigation/NavigationService';
@@ -20,7 +20,21 @@ import ViewProfileScreen from './screens/ViewProfileScreen';
 const AuthStack = createStackNavigator();
 const AppStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-
+function getHeaderTitle(route) {
+  const routeName = getFocusedRouteNameFromRoute(route) ?? 'Matches';
+  switch (routeName) {
+    case 'Matches':
+      return 'Matches';
+    case 'Likes':
+      return 'Likes';
+    case 'Activities':
+      return 'Activities';
+    case 'Messages':
+      return 'Messages';
+    default:
+      return 'Home';
+  }
+}
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -85,8 +99,8 @@ function RootNavigator() {
           <AppStack.Screen
             name="Main"
             component={MainTabs}
-            options={({ navigation }) => ({
-              title: 'Home',
+            options={({ route, navigation }) => ({
+              title: getHeaderTitle(route),
               headerTitleAlign: 'center',
               headerRight: () => (
                 <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ marginRight: 16 }}>

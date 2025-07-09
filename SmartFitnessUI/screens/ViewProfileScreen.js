@@ -44,7 +44,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
     const handleLikeBack = async () => {
         try {
-            const resp = await fetch(`${API_URL}/api/matches/${fromUserId}/like`, {
+            const resp = await fetch(`${API_URL}/api/match-requests/${fromUserId}/like`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${userToken}` }
             });
@@ -60,7 +60,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     const handleReject = async () => {
         try {
             // Call reject endpoint
-            const resp = await fetch(`${API_URL}/api/likes/${fromUserId}/reject`, {
+            const resp = await fetch(`${API_URL}/api/match-requests/decline/${fromUserId}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${userToken}` }
             });

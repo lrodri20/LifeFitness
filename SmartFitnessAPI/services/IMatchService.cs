@@ -5,7 +5,9 @@ namespace SmartFitnessApi.Services
 {
     public interface IMatchService
     {
-        Task<IEnumerable<MatchDto>> GetMatchesAsync(int userId, string sortBy = "compatibility");
+        Task<IEnumerable<MatchDtoOld>> GetMatchesOldAsync(int userId, string sortBy = "compatibility");
+        Task<IEnumerable<MatchDto>> GetMatchesAsync(int userId);
+
         Task RemoveMatchAsync(int matchId, int userId);
         Task BlockUserAsync(int matchId, int userId);
         Task<ActiveMatchDto> GetMatchDetailsAsync(int matchId, int userId);

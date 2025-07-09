@@ -20,12 +20,12 @@ namespace SmartFitnessApi.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<MatchDto>> GetMatchesAsync(int userId, string sortBy = "compatibility")
+        public async Task<IEnumerable<MatchDtoOld>> GetMatchesOldAsync(int userId, string sortBy = "compatibility")
         {
             // 1) Retrieve filtered candidates based on user preferences
             var candidates = await _context.FindByPreferencesAsync(userId);
 
-            var results = new List<MatchDto>();
+            var results = new List<MatchDtoOld>();
 
             // 2) Build match list
             foreach (var c in candidates)
@@ -36,7 +36,7 @@ namespace SmartFitnessApi.Services
                 // Fetch shared activities
                 var shared = await _context.GetSharedActivitiesAsync(userId, c.UserId);
 
-                results.Add(new MatchDto
+                results.Add(new MatchDtoOld
                 {
                     MatchId = c.UserId,
                     MatchedAt = DateTime.UtcNow,
@@ -67,7 +67,45 @@ namespace SmartFitnessApi.Services
 
             return ordered;
         }
+        public async Task<IEnumerable<MatchDto>> GetMatchesAsync(int userId)
+        {
+            // load all matches where current user is either side
+            var raw = await _context.Matches
+                .Where(m => m.User1Id == userId || m.User2Id == userId)
+                .OrderByDescending(m => m.CreatedAt)
+                .ToListAsync();
 
+            var list = new List<MatchDto>(raw.Count);
+            foreach (var m in raw)
+            {
+                var otherId = m.User1Id == userId ? m.User2Id : m.User1Id;
+
+                // fetch the other user’s profile
+                var p = await _context.Profiles
+                    .Where(x => x.UserId == otherId)
+                    .Select(x => new
+                    {
+                        x.UserId,
+                        x.DisplayName,
+                        x.ProfilePictureUrl
+                    })
+                    .FirstOrDefaultAsync();
+
+                list.Add(new MatchDto
+                {
+                    MatchId = m.Id,
+                    MatchedAt = m.CreatedAt.ToString("o"),
+                    OtherUser = new OtherUserDto
+                    {
+                        Id = p.UserId,
+                        Name = p.DisplayName,
+                        AvatarUrl = p.ProfilePictureUrl
+                    }
+                });
+            }
+
+            return list;
+        }
         private double ComputeCompatibility(int userId, CandidateDto candidate)
         {
             // TODO: implement real compatibility logic based on preferences, activities, etc.

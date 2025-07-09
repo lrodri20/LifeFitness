@@ -92,7 +92,7 @@ export default function LikesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: { flex: 1, backgroundColor: '#f9f9f9', },
     list: { padding: 16 },
     card: {
         flex: 1,

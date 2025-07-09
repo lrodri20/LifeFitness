@@ -27,8 +27,8 @@ namespace SmartFitnessApi.Controllers
         /// <summary>
         /// Get all active matches (accepted workout partners)
         /// </summary>
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<MatchDto>>> GetMatches(
+        [HttpGet("legacy")]
+        public async Task<ActionResult<IEnumerable<MatchDto>>> GetMatchesOld(
              [FromQuery] string sortBy = "compatibility")
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -40,10 +40,21 @@ namespace SmartFitnessApi.Controllers
             if (prefs == null)
                 return NotFound("Preferences not set");
 
-            var matches = await _matchService.GetMatchesAsync(userId, sortBy);
+            var matches = await _matchService.GetMatchesOldAsync(userId, sortBy);
             return Ok(matches);
         }
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<MatchDto>>> GetMatches()
+        {
+            // assume user’s ID is in the NameIdentifier claim
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                              ?? User.FindFirst("sub")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
 
+            var matches = await _matchService.GetMatchesAsync(userId);
+            return Ok(matches);
+        }
         /// <summary>
         /// Remove an active match (unfriend)
         /// </summary>

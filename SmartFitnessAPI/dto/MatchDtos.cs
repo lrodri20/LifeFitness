@@ -208,7 +208,7 @@ namespace SmartFitnessApi.Data.Dtos
         /// </summary>
         public bool IsTomorrow { get; init; }
     }
-    public class MatchDto
+    public class MatchDtoOld
     {
         public int MatchId { get; set; }
         public DateTime MatchedAt { get; set; }
@@ -274,7 +274,7 @@ namespace SmartFitnessApi.Data.Dtos
     {
         public bool IsMatch { get; set; }
         public LikeDto? Like { get; set; }
-        public MatchDto? Match { get; set; }
+        public MatchDtoOld? Match { get; set; }
     }
     /// <summary>
     /// Represents an incoming "like" from another user.
@@ -285,5 +285,17 @@ namespace SmartFitnessApi.Data.Dtos
         public int FromUserId { get; set; }
         public DateTime LikedAt { get; set; }
         public PartnerDto From { get; set; } = null!;
+    }
+    public class OtherUserDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string AvatarUrl { get; set; }
+    }
+    public class MatchDto
+    {
+        public int MatchId { get; set; }
+        public OtherUserDto OtherUser { get; set; }
+        public string MatchedAt { get; set; }   // ISO-8601 string
     }
 }

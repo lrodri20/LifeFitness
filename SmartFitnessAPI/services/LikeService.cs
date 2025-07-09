@@ -50,7 +50,7 @@ namespace SmartFitnessApi.Services
                     .Include(p => p.User)
                     .FirstOrDefaultAsync(p => p.UserId == targetUserId);
 
-                var matchDto = new MatchDto
+                var matchDto = new MatchDtoOld
                 {
                     MatchId = targetUserId,
                     MatchedAt = DateTime.UtcNow,

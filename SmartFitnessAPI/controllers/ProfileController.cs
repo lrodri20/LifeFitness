@@ -14,9 +14,13 @@ namespace SmartFitnessApi.Controllers
     public class ProfileController : ControllerBase
     {
         private readonly IAccountService _acct;
+        private readonly IProfileService _profileService;
 
-        public ProfileController(IAccountService acct) => _acct = acct;
-
+        public ProfileController(IAccountService acct, IProfileService profileService)
+        {
+            _profileService = profileService;
+            _acct = acct;
+        }
         [HttpGet]
         public async Task<ActionResult<ProfileDto>> GetProfile()
         {
@@ -53,6 +57,17 @@ namespace SmartFitnessApi.Controllers
             {
                 return NotFound();
             }
+        }
+        // <summary>
+        /// GET /api/profiles/{id}
+        /// Returns the public profile information for a given user.
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ProfileDto>> GetById(int id)
+        {
+            var dto = await _profileService.GetProfileAsync(id);
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
     }
 }

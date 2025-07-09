@@ -15,7 +15,7 @@ import exampleImage from '../images/example1.avif';
 
 const API_URL = 'http://localhost:5199';
 
-export default function LikesScreen() {
+export default function LikesScreen({ navigation }) {
     const { userToken } = useContext(AuthContext);
     const [likes, setLikes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -35,6 +35,7 @@ export default function LikesScreen() {
                     id: like.likeId.toString(),
                     name: like.from.displayName + ', ' + (like.from.age || ''),
                     image: like.from.profilePictureUrl || exampleImage,
+                    fromUserId: like.from.userId,
                 }));
                 setLikes(list);
             } catch (err) {
@@ -48,13 +49,19 @@ export default function LikesScreen() {
     }, [userToken]);
 
     const renderItem = ({ item }) => (
-        <View style={styles.card} key={item.id}>
-            <Image source={exampleImage} style={styles.avatar} />
+        < View style={styles.card} key={item.id} >
+            <Image
+                source={exampleImage}
+                style={styles.avatar}
+            />
             <Text style={styles.name}>{item.name}</Text>
-            <TouchableOpacity style={styles.button} onPress={() => {/* Navigate to profile or match back */ }}>
+            <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate('ViewProfile', { fromUserId: parseInt(item.fromUserId, 10) })}
+            >
                 <Text style={styles.buttonText}>View</Text>
             </TouchableOpacity>
-        </View>
+        </View >
     );
 
     if (loading) {

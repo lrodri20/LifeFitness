@@ -15,7 +15,7 @@ import MatchesScreen from './screens/MatchesScreen';
 import LikesScreen from './screens/LikesScreen';
 import MessagesScreen from './screens/MessagesScreen';
 import SettingsScreen from './screens/SettingsScreen';
-
+import ViewProfileScreen from './screens/ViewProfileScreen';
 const AuthStack = createStackNavigator();
 const AppStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -93,6 +93,15 @@ function RootNavigator() {
               ),
               headerTintColor: '#4CAF50',
             })}
+          />
+          <AppStack.Screen
+            name="ViewProfile"
+            component={ViewProfileScreen}
+            options={{
+              title: 'User Profile',
+              headerTitleAlign: 'center',
+              headerTintColor: '#4CAF50',
+            }}
           />
           <AppStack.Screen
             name="Settings"

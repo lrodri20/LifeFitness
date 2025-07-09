@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
     },
     button: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#4CAF50',
         height: 48,
         borderRadius: 8,
         justifyContent: 'center',
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
     linkText: {
-        color: '#007AFF',
+        color: '#4CAF50',
     },
     marginTop: {
         marginTop: 8,

@@ -1,6 +1,6 @@
 using SmartFitnessApi.Models.enums;
 
-namespace SmartFitnessApi.Models
+namespace SmartFitnessApi.Data.Dtos
 {
     public class MatchRequestDto
     {

@@ -1,3 +1,4 @@
+using SmartFitnessApi.Data.Dtos;
 using SmartFitnessApi.Models;
 
 namespace SmartFitnessApi.Services

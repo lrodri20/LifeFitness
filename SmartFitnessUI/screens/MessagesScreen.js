@@ -29,7 +29,7 @@ export default function MessagesScreen({ navigation }) {
                     fetch(`${apiBaseUrl}/api/Matches`, {
                         headers: { Authorization: `Bearer ${userToken}` },
                     }),
-                    fetch(`${apiBaseUrl}/api/Matches`, {
+                    fetch(`${apiBaseUrl}/api/Chats`, {
                         headers: { Authorization: `Bearer ${userToken}` },
                     }),
                 ]);
@@ -44,7 +44,7 @@ export default function MessagesScreen({ navigation }) {
                 ]);
 
                 setMatches(matchList);
-                setChats([]);
+                setChats(chatList);
                 // Optionally pre-select the first match
                 if (matchList.length) {
                     setSelectedMatch(matchList[0]);

@@ -19,5 +19,6 @@ namespace SmartFitnessApi.Models
         // Message content and timestamp
         public string Content { get; set; } = string.Empty;
         public DateTime SentAt { get; set; }
+        public bool IsRead { get; set; } = false;
     }
 }

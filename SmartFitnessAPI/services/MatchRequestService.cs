@@ -2,6 +2,7 @@ namespace SmartFitnessApi.Services
 {
     using Microsoft.EntityFrameworkCore;
     using SmartFitnessApi.Data;
+    using SmartFitnessApi.Data.Dtos;
     using SmartFitnessApi.Models;
     using SmartFitnessApi.Models.enums;
     using System;

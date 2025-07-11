@@ -1,5 +1,6 @@
 // src/screens/LikesScreen.js
 import React, { useEffect, useState, useContext, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     View,
     Text,
@@ -67,6 +68,13 @@ export default function LikesScreen({ navigation }) {
         }
     }, [userToken, loadLikes]);
 
+    useFocusEffect(
+        useCallback(() => {
+            if (userToken) {
+                loadLikes();
+            }
+        }, [userToken, loadLikes])
+    );
     const renderItem = ({ item }) => (
         <View style={styles.card} key={item.id}>
             <Image

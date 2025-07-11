@@ -1,5 +1,5 @@
 // src/screens/LikesScreen.js
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import {
     View,
     Text,
@@ -19,51 +19,79 @@ export default function LikesScreen({ navigation }) {
     const { userToken } = useContext(AuthContext);
     const [likes, setLikes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        const loadLikes = async () => {
+    // 1) Extracted loader so we can call it on mount + refresh
+    const loadLikes = useCallback(async (isRefresh = false) => {
+        if (isRefresh) {
+            setRefreshing(true);
+        } else {
             setLoading(true);
-            try {
-                const resp = await fetch(`${API_URL}/api/match-requests/incoming`, {
-                    headers: { Authorization: `Bearer ${userToken}` }
-                });
-                const data = await resp.json();
-                if (!resp.ok) throw new Error(data.message || 'Failed to load likes');
+        }
 
-                // Map API LikeDto to UI model
-                const list = data.map(like => ({
-                    id: like.likeId.toString(),
-                    name: like.from.displayName + ', ' + (like.from.age || ''),
-                    image: like.from.profilePictureUrl || exampleImage,
-                    fromUserId: like.from.userId,
-                }));
-                setLikes(list);
-            } catch (err) {
-                console.warn('Failed to fetch likes:', err);
-                setLikes([]);
-            } finally {
+        try {
+            const resp = await fetch(
+                `${API_URL}/api/match-requests/incoming`,
+                { headers: { Authorization: `Bearer ${userToken}` } }
+            );
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                throw new Error(data.message || 'Failed to load likes');
+            }
+
+            // Map API LikeDto to UI model
+            const list = data.map(like => ({
+                id: like.likeId.toString(),
+                name: `${like.from.displayName}, ${like.from.age || ''}`,
+                image: like.from.profilePictureUrl || exampleImage,
+                fromUserId: like.from.userId,
+            }));
+            setLikes(list);
+        } catch (err) {
+            console.warn('Failed to fetch likes:', err);
+            setLikes([]);
+        } finally {
+            if (isRefresh) {
+                setRefreshing(false);
+            } else {
                 setLoading(false);
             }
-        };
-        if (userToken) loadLikes();
+        }
     }, [userToken]);
 
+    // 2) Load on mount
+    useEffect(() => {
+        if (userToken) {
+            loadLikes();
+        }
+    }, [userToken, loadLikes]);
+
     const renderItem = ({ item }) => (
-        < View style={styles.card} key={item.id} >
+        <View style={styles.card} key={item.id}>
             <Image
-                source={exampleImage}
+                source={
+                    typeof item.image === 'string'
+                        ? { uri: item.image }
+                        : item.image
+                }
                 style={styles.avatar}
             />
             <Text style={styles.name}>{item.name}</Text>
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => navigation.navigate('ViewProfile', { fromUserId: parseInt(item.fromUserId, 10) })}
+                onPress={() =>
+                    navigation.navigate('ViewProfile', {
+                        fromUserId: parseInt(item.fromUserId, 10)
+                    })
+                }
             >
                 <Text style={styles.buttonText}>View</Text>
             </TouchableOpacity>
-        </View >
+        </View>
     );
 
+    // 3) Initial loading spinner
     if (loading) {
         return (
             <View style={styles.center}>
@@ -72,6 +100,7 @@ export default function LikesScreen({ navigation }) {
         );
     }
 
+    // 4) Main render
     return (
         <SafeAreaView style={styles.container}>
             {likes.length === 0 ? (
@@ -85,6 +114,10 @@ export default function LikesScreen({ navigation }) {
                     renderItem={renderItem}
                     contentContainerStyle={styles.list}
                     numColumns={2}
+
+                    // <-- pull-to-refresh props
+                    refreshing={refreshing}
+                    onRefresh={() => loadLikes(true)}
                 />
             )}
         </SafeAreaView>
@@ -92,13 +125,13 @@ export default function LikesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f9f9f9', },
+    container: { flex: 1, backgroundColor: '#f9f9f9' },
     list: { padding: 16 },
     card: {
         flex: 1,
         alignItems: 'center',
         margin: 8,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#fff',
         borderRadius: 12,
         padding: 16,
         elevation: 2,

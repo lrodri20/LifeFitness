@@ -87,34 +87,52 @@ namespace SmartFitnessApi.Services
         }
         public async Task<IEnumerable<IncomingLikeDto>> GetIncomingLikesAsync(int userId)
         {
-            var requests = await _context.MatchRequests
+            // 1) Get all incoming match‐requests (to me)
+            var incoming = await _context.MatchRequests
                 .Where(m => m.RequesteeId == userId)
                 .OrderByDescending(m => m.CreatedAt)
                 .ToListAsync();
 
-            var profileIds = requests.Select(r => r.RequesterId).Distinct().ToList();
+            // 2) Get all outgoing requests I've sent (so we can spot mutual likes)
+            var outgoingProfileIds = await _context.MatchRequests
+                .Where(m => m.RequesterId == userId)
+                .Select(m => m.RequesteeId)
+                .Distinct()
+                .ToListAsync();
 
-            // Fetch all relevant profiles at once
+            // 3) Filter out mutual likes
+            var filtered = incoming
+                .Where(r => !outgoingProfileIds.Contains(r.RequesterId))
+                .ToList();
+
+            // 4) Batch‐fetch profiles for the remaining requesters
+            var requesterIds = filtered
+                .Select(r => r.RequesterId)
+                .Distinct()
+                .ToList();
+
             var profiles = await _context.Profiles
                 .AsNoTracking()
-                .Where(p => profileIds.Contains(p.UserId))
+                .Where(p => requesterIds.Contains(p.UserId))
                 .Include(p => p.ProfileActivities)
                     .ThenInclude(pa => pa.Activity)
                 .ToListAsync();
 
+            // 5) Build your DTOs
             var result = new List<IncomingLikeDto>();
-            foreach (var req in requests)
+            foreach (var req in filtered)
             {
-                var p = profiles.FirstOrDefault(pr => pr.UserId == req.RequesterId)!;
-                // Calculate age
+                var p = profiles.First(pr => pr.UserId == req.RequesterId);
+
+                // calculate age
                 var age = 0;
                 if (p.DateOfBirth.HasValue)
                 {
                     age = DateTime.UtcNow.Year - p.DateOfBirth.Value.Year;
-                    if (p.DateOfBirth.Value.Date > DateTime.UtcNow.AddYears(-age)) age--;
+                    if (p.DateOfBirth.Value.Date > DateTime.UtcNow.AddYears(-age))
+                        age--;
                 }
 
-                // Build partner info
                 var partner = new PartnerDto
                 {
                     UserId = p.UserId,
@@ -123,12 +141,11 @@ namespace SmartFitnessApi.Services
                     ProfilePictureUrl = p.ProfilePictureUrl,
                     City = p.City,
                     State = p.State,
-                    DistanceMiles = 0, // or compute via Haversine
+                    DistanceMiles = 0, // TODO: compute via Haversine if desired
                     FitnessLevel = (int)p.FitnessLevel,
                     Activities = p.ProfileActivities
-    .Select(pa => pa.Activity.Name)
-    .ToList()
-
+                                           .Select(pa => pa.Activity.Name)
+                                           .ToList()
                 };
 
                 result.Add(new IncomingLikeDto

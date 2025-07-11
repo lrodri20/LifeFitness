@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartFitness")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c9db8293149f7e97a08b4526810c939b72072019")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+71aacb34715d6a04030d71b4d5ef258433a4ef3b")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartFitness")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartFitness")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

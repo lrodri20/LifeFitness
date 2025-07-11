@@ -16,15 +16,12 @@ namespace SmartFitnessApi.Services
             _db = db;
         }
 
-        /// <summary>
-        /// Returns the filtered & sorted “queue” of potential partners for the given user.
-        /// </summary>
         public async Task<IEnumerable<UserQueueDto>> GetUserQueueAsync(
-            int currentUserId,
-            string sortBy = "Recent"   // "Recent" | "Compatibility" | "Interaction" | "All"
-        )
+    int currentUserId,
+    string sortBy = "Recent"   // "Recent" | "Compatibility" | "Interaction" | "All"
+)
         {
-            // 1) Load current user’s profile
+            // 1) Load current user’s Profile
             var me = await _db.Profiles
                 .AsNoTracking()
                 .SingleAsync(p => p.UserId == currentUserId);
@@ -34,72 +31,84 @@ namespace SmartFitnessApi.Services
                 .AsNoTracking()
                 .SingleAsync(mp => mp.ProfileId == me.Id);
 
-            var likedProfileIds = await _db.MatchRequests
-                            .AsNoTracking()
-                            .Where(r => r.RequesterId == me.Id)
-                            .Select(r => r.RequesteeId)
-                            .ToListAsync();
-            // 3) Pull all other profiles into memory
+            // 3) Build a blacklist of any Profile.Id you've liked
+            var likedByMe = await _db.MatchRequests
+                .AsNoTracking()
+                .Where(r => r.RequesterId == me.Id)
+                .Select(r => r.RequesteeId)
+                .ToListAsync();
+
+            // 4) ...plus any who have liked you
+            var likedMe = await _db.MatchRequests
+                .AsNoTracking()
+                .Where(r => r.RequesteeId == me.Id)
+                .Select(r => r.RequesterId)
+                .ToListAsync();
+
+            // 5) Union them into one set
+            var blockedProfileIds = likedByMe
+                .Union(likedMe)
+                .ToHashSet();
+
+            // 6) Pull all other profiles into memory
             var others = await _db.Profiles
                 .AsNoTracking()
                 .Where(p => p.UserId != currentUserId)
                 .ToListAsync();
 
-            // 4) Apply filters in C#
-            var filtered = others.Where(p =>
-            {
-                if (likedProfileIds.Contains(p.Id))
-                    return false;
-                // Age filter
-                var age = DateHelpers.CalculateAge(p.DateOfBirth);
-                if (age < prefs.MinAge || age > prefs.MaxAge)
-                    return false;
+            // 7) Apply filters in C#
+            var filtered = others
+                .Where(p =>
+                {
+                    // Skip if in our blocked set
+                    if (blockedProfileIds.Contains(p.Id))
+                        return false;
 
-                // Gender filter (assumes Profile.Gender exists; skip if "Any")
-                // if (!string.Equals(prefs.GenderPreference, "Any", StringComparison.OrdinalIgnoreCase)
-                //     && !string.Equals(p.Gender, prefs.GenderPreference, StringComparison.OrdinalIgnoreCase))
-                //     return false;
+                    // Age filter
+                    var age = DateHelpers.CalculateAge(p.DateOfBirth);
+                    if (age < prefs.MinAge || age > prefs.MaxAge)
+                        return false;
 
-                // Distance filter (miles)
-                // Ensure all coordinates are present
-                if (!me.Latitude.HasValue || !me.Longitude.HasValue || !p.Latitude.HasValue || !p.Longitude.HasValue)
-                    return false;
+                    // Distance filter
+                    if (!me.Latitude.HasValue || !me.Longitude.HasValue
+                     || !p.Latitude.HasValue || !p.Longitude.HasValue)
+                        return false;
 
-                var distance = GeoHelpers.DistanceInMiles(
-                    me.Latitude.Value, me.Longitude.Value,
-                    p.Latitude.Value, p.Longitude.Value);
-                if (distance > prefs.MaxDistanceMiles)
-                    return false;
+                    var dist = GeoHelpers.DistanceInMiles(
+                        me.Latitude.Value, me.Longitude.Value,
+                        p.Latitude.Value, p.Longitude.Value);
+                    if (dist > prefs.MaxDistanceMiles)
+                        return false;
 
-                // Home-gym filter
-                if (prefs.PreferHomeGym && !p.HasHomeGym)
-                    return false;
+                    // Home-gym filter
+                    if (prefs.PreferHomeGym && !p.HasHomeGym)
+                        return false;
 
-                // Similar fitness-level filter
-                if (prefs.PreferSimilarFitnessLevel
-                    && Math.Abs(p.FitnessLevel - me.FitnessLevel) > prefs.FitnessLevelTolerance)
-                    return false;
+                    // Fitness-level tolerance
+                    if (prefs.PreferSimilarFitnessLevel
+                     && Math.Abs(p.FitnessLevel - me.FitnessLevel) > prefs.FitnessLevelTolerance)
+                        return false;
 
-                return true;
-            }).ToList();
+                    return true;
+                })
+                .ToList();
 
-            // 5) Sort
+            // 8) Sort
             IEnumerable<Profile> sorted = sortBy switch
             {
                 "Compatibility" => filtered
                     .OrderBy(p => Math.Abs(p.FitnessLevel - me.FitnessLevel)),
                 "Interaction" => filtered
-                    // sort by total messages exchanged with you
                     .OrderByDescending(p =>
                         _db.Messages.Count(m =>
                             (m.SenderId == me.Id && m.Match.User2Id == p.Id) ||
                             (m.SenderId == p.Id && m.Match.User2Id == me.Id))),
                 "Recent" => filtered
                     .OrderByDescending(p => p.CreatedAt),
-                _ => filtered  // "All" or any other
+                _ => filtered,
             };
 
-            // 6) Project into DTO
+            // 9) Project into DTO
             return sorted.Select(p => new UserQueueDto
             {
                 Id = p.UserId,
@@ -108,7 +117,6 @@ namespace SmartFitnessApi.Services
                 Age = DateHelpers.CalculateAge(p.DateOfBirth),
                 City = p.City,
                 FitnessLevel = (int)p.FitnessLevel
-                // …add any other fields you need
             });
         }
     }

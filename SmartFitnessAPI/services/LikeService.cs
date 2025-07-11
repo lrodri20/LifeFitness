@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartFitnessApi.Data;
 using SmartFitnessApi.Data.Dtos;
 using SmartFitnessApi.Models;
+using SmartFitnessApi.Models.enums;
 
 namespace SmartFitnessApi.Services
 {
@@ -17,74 +18,97 @@ namespace SmartFitnessApi.Services
             _context = context;
         }
 
-        public async Task<LikeResultDto> CreateLikeAsync(int userId, int targetUserId)
+        public async Task<LikeResultDto> CreateLikeAsync(int me, int them)
         {
-            if (userId == targetUserId)
-                throw new InvalidOperationException("Cannot like yourself.");
+            if (me == them)
+                throw new ArgumentException("Cannot like yourself");
 
-            // Prevent duplicate
-            bool already = await _context.MatchRequests
-                .AnyAsync(m => m.RequesterId == userId && m.RequesteeId == targetUserId);
-            if (already)
-                throw new InvalidOperationException("Like already exists.");
+            using var tx = await _context.Database.BeginTransactionAsync();
 
-            // Create pending like
-            var like = new MatchRequest
+            // 1) Prevent duplicate likes
+            var exists = await _context.MatchRequests
+                .AnyAsync(r => r.RequesterId == me && r.RequesteeId == them);
+            if (exists)
+                throw new InvalidOperationException("You have already liked this user");
+
+            // 2) Insert your swipe
+            var req = new MatchRequest
             {
-                RequesterId = userId,
-                RequesteeId = targetUserId,
+                RequesterId = me,
+                RequesteeId = them,
                 CreatedAt = DateTime.UtcNow,
-                RespondedAt = null
+                Status = MatchStatus.Pending
             };
-            _context.MatchRequests.Add(like);
+            _context.MatchRequests.Add(req);
             await _context.SaveChangesAsync();
 
-            // Check for reciprocal like
-            bool isMutual = await _context.MatchRequests
-                .AnyAsync(m => m.RequesterId == targetUserId && m.RequesteeId == userId);
+            // 3) Check for reciprocal swipe
+            var reciprocal = await _context.MatchRequests
+                .SingleOrDefaultAsync(r => r.RequesterId == them && r.RequesteeId == me);
 
-            if (isMutual)
+            LikeResultDto result;
+            if (reciprocal != null && reciprocal.Status == MatchStatus.Pending)
             {
-                // Build MatchDto
-                var partnerProfile = await _context.Profiles
-                    .Include(p => p.User)
-                    .FirstOrDefaultAsync(p => p.UserId == targetUserId);
+                // 4a) Mark both as accepted
+                reciprocal.Status = req.Status = MatchStatus.Accepted;
+                reciprocal.RespondedAt = req.RespondedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
 
-                var matchDto = new MatchDtoOld
+                // 4b) Create the Match record
+                var match = new Match
                 {
-                    MatchId = targetUserId,
-                    MatchedAt = DateTime.UtcNow,
-                    CompatibilityScore = 0, // compute if needed
-                    Partner = new PartnerDto
+                    User1Id = me,
+                    User2Id = them,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Matches.Add(match);
+                await _context.SaveChangesAsync();
+
+                // 4c) Manually map to your MatchDto
+                result = new LikeResultDto
+                {
+                    IsMatch = true,
+                    Match = new MatchDtoOld
                     {
-                        UserId = partnerProfile!.UserId,
-                        DisplayName = partnerProfile.DisplayName!,
-                        Age = partnerProfile.DateOfBirth.HasValue
-                            ? DateTime.UtcNow.Year - partnerProfile.DateOfBirth.Value.Year
-                            : 0,
-                        ProfilePictureUrl = partnerProfile.ProfilePictureUrl,
-                        City = partnerProfile.City,
-                        State = partnerProfile.State,
-                        DistanceMiles = 0,
-                        FitnessLevel = (int)partnerProfile.FitnessLevel,
-                        Activities = new System.Collections.Generic.List<string>()
+                        MatchId = match.Id,                        // int or string, whatever your DTO expects
+                        MatchedAt = match.CreatedAt,
+                        OtherUser = new OtherUserDto
+                        {
+                            Id = them,
+                            Name = (await _context.Profiles
+                                           .Where(p => p.UserId == them)
+                                           .Select(p => p.DisplayName)
+                                           .FirstAsync()),
+                            AvatarUrl = (await _context.Profiles
+                                           .Where(p => p.UserId == them)
+                                           .Select(p => p.ProfilePictureUrl)
+                                           .FirstAsync())
+                        }
                     }
                 };
-
-                return new LikeResultDto { IsMatch = true, Match = matchDto };
+            }
+            else
+            {
+                // 5) Just return a LikeDto
+                result = new LikeResultDto
+                {
+                    IsMatch = false,
+                    Like = new LikeDto
+                    {
+                        LikeId = req.Id,
+                        FromUserId = me,
+                        ToUserId = them,
+                        LikedAt = req.CreatedAt
+                    }
+                };
             }
 
-            // Return pending like info
-            var likeDto = new LikeDto
-            {
-                LikeId = like.Id,
-                FromUserId = like.RequesterId,
-                ToUserId = like.RequesteeId,
-                LikedAt = like.CreatedAt
-            };
-
-            return new LikeResultDto { IsMatch = false, Like = likeDto };
+            await tx.CommitAsync();
+            return result;
         }
+
+
+
         public async Task<IEnumerable<IncomingLikeDto>> GetIncomingLikesAsync(int userId)
         {
             // 1) Get all incoming match‐requests (to me)

@@ -49,9 +49,11 @@ namespace SmartFitnessApi.Services
                     .OrderByDescending(msg => msg.SentAt)
                     .FirstOrDefaultAsync();
 
+                // Skip matches without any messages
+                if (lastMsg == null)
+                    continue;
+
                 // 5) count unread messages
-                //    (assumes your Message entity has a bool IsRead property;
-                //     otherwise this will always be zero)
                 var unreadCount = await _db.Messages
                     .Where(msg =>
                         msg.MatchId == match.Id
@@ -62,17 +64,17 @@ namespace SmartFitnessApi.Services
                 chats.Add(new ChatDto
                 {
                     ChatId = $"c{match.Id}",               // e.g. "c101"
-                    MatchId = $"m{match.Id}",               // e.g. "m101"
+                    MatchId = $"m{match.Id}",             // e.g. "m101"
                     OtherUser = new OtherUserDto
                     {
                         Id = profile.UserId,
                         Name = profile.DisplayName,
                         AvatarUrl = profile.ProfilePictureUrl
                     },
-                    LastMessage = lastMsg?.Content ?? string.Empty,
-                    Time = lastMsg?.SentAt
+                    LastMessage = lastMsg.Content,
+                    Time = lastMsg.SentAt
                                            .ToLocalTime()
-                                           .ToString("h:mm tt") ?? string.Empty,
+                                           .ToString("h:mm tt"),
                     UnreadCount = unreadCount
                 });
             }

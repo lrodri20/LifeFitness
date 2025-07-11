@@ -215,6 +215,25 @@ namespace SmartFitnessApi.Data.Dtos
         public double CompatibilityScore { get; set; }
         public PartnerDto Partner { get; set; }
         public List<string> SharedActivities { get; set; }
+        public OtherUserDto OtherUser { get; set; }
+
+    }
+    public class MatchDtoNew
+    {
+        /// <summary>
+        /// The primary key of the Match record.
+        /// </summary>
+        public int MatchId { get; set; }
+
+        /// <summary>
+        /// The timestamp (ISO-8601 string) when the match was created.
+        /// </summary>
+        public DateTime MatchedAt { get; set; }
+
+        /// <summary>
+        /// Information about the other user in this match.
+        /// </summary>
+        public OtherUserDto OtherUser { get; set; }
     }
 
     public class PartnerDto

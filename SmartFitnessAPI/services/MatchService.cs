@@ -69,9 +69,18 @@ namespace SmartFitnessApi.Services
         }
         public async Task<IEnumerable<MatchDto>> GetMatchesAsync(int userId)
         {
-            // load all matches where current user is either side
+            // 1) Pull all match IDs that have at least one message
+            var chattedMatchIds = await _context.Messages
+                .Select(msg => msg.MatchId)
+                .Distinct()
+                .ToListAsync();
+
+            // 2) Load only those Matches for this user that have NO messages yet
             var raw = await _context.Matches
-                .Where(m => m.User1Id == userId || m.User2Id == userId)
+                .Where(m =>
+                    (m.User1Id == userId || m.User2Id == userId)
+                    && !chattedMatchIds.Contains(m.Id)
+                )
                 .OrderByDescending(m => m.CreatedAt)
                 .ToListAsync();
 
@@ -106,6 +115,7 @@ namespace SmartFitnessApi.Services
 
             return list;
         }
+
         private double ComputeCompatibility(int userId, CandidateDto candidate)
         {
             // TODO: implement real compatibility logic based on preferences, activities, etc.

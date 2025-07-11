@@ -70,32 +70,30 @@ export default function MatchesScreen() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            // build query params
-            const params = new URLSearchParams();
-            params.append('sortBy', sortBy.toLowerCase());
-            if (filters.minAge !== null) params.append('minAge', filters.minAge);
-            if (filters.maxAge !== null) params.append('maxAge', filters.maxAge);
-            if (filters.gender) params.append('gender', filters.gender);
-            const url = `${API_URL}/api/matches?${params.toString()}`;
+            const url = `${API_URL}/api/users/queue?sortBy=${encodeURIComponent(sortBy)}`;
+            const resp = await fetch(url, {
+                headers: { Authorization: `Bearer ${userToken}` },
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-            const resp = await fetch(url, { headers: { Authorization: `Bearer ${userToken}` } });
             const result = await resp.json();
-            const profiles = result.map(m => ({
-                id: m.partner.userId,
-                name: m.partner.displayName,
-                bio: m.partner.bio || 'No bio',
-                city: m.partner.city,
-                age: m.partner.age,
-                state: m.partner.state,
-                distance: m.partner.distanceMiles,
+            // result: [ { id, name, avatarUrl, age, city, fitnessLevel, … }, … ]
+            const profiles = result.map(u => ({
+                id: u.id,
+                name: u.name,
+                avatarUrl: u.avatarUrl,
+                age: u.age,
+                city: u.city,
+                fitnessLevel: u.fitnessLevel,
             }));
+
             setCards(profiles);
         } catch (err) {
-            console.warn('Matches load error:', err);
+            console.warn('Queue load error:', err);
         } finally {
             setLoading(false);
         }
-    }, [userToken, sortBy, filters]);
+    }, [userToken, sortBy]);
     useEffect(() => {
         loadData();
     }, [loadData]);
@@ -112,7 +110,7 @@ export default function MatchesScreen() {
     const onSwipedRight = index => {
         if (noCards || !cards[index]) return;
         const match = cards[index];
-        fetch(`${API_URL}/api/match-requests/${match.id}`, {
+        fetch(`${API_URL}/api/match-requests/${match.id}/like`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${userToken}` }
         }).catch(console.error);

@@ -18,7 +18,6 @@ namespace SmartFitnessApi.Data.Seeding
             AuthenticationService = authService;
             // Ensure database is created
             await context.Database.EnsureCreatedAsync();
-
             // Check if we already have data
             var userCount = await context.Users.CountAsync();
             if (userCount > 0)
@@ -31,6 +30,8 @@ namespace SmartFitnessApi.Data.Seeding
 
             try
             {
+                var profiles = await context.Profiles.ToListAsync();
+
                 // Seed Activities first
                 var activities = GetActivities();
                 await context.Activities.AddRangeAsync(activities);
@@ -42,7 +43,7 @@ namespace SmartFitnessApi.Data.Seeding
                 await context.SaveChangesAsync();
 
                 // Get the saved profiles for relationship setup
-                var profiles = await context.Profiles.ToListAsync();
+                //var profiles = await context.Profiles.ToListAsync();
 
                 // Seed Profile Activities
                 await SeedProfileActivities(context, profiles, activities.ToList());
@@ -58,6 +59,17 @@ namespace SmartFitnessApi.Data.Seeding
 
                 // Seed some sample matches
                 await SeedMatches(context, profiles);
+                // Seed Match Requests
+                await SeedMatchRequests(context, profiles);
+
+                // -- Messages for each match
+                await SeedMessages(context);
+
+                // -- User Refresh Tokens
+                await SeedRefreshTokens(context);
+
+                // -- Password Reset Tokens
+                await SeedPasswordResetTokens(context);
 
                 await transaction.CommitAsync();
             }
@@ -157,7 +169,26 @@ namespace SmartFitnessApi.Data.Seeding
 
                 new { Email = "john.anderson@email.com", UserName = "johnanders", FirstName = "John", LastName = "Anderson",
                       Lat = 25.7989, Lng = -80.2089, Bio = "Rock climbing and outdoor adventures. Seeking climbing partners for weekends.",
-                      FitnessLevel = FitnessLevel.Advanced, HasHomeGym = true }
+                      FitnessLevel = FitnessLevel.Advanced, HasHomeGym = true },
+                      new { Email = "olivia.brown@email.com",    UserName = "oliviab",      FirstName = "Olivia",  LastName = "Brown",
+          Lat = 25.7840, Lng = -80.2100, Bio = "Pilates instructor who loves sculpting and core work. Always looking for a reformer buddy!",
+          FitnessLevel = FitnessLevel.Intermediate, HasHomeGym = false },
+
+    new { Email = "brandon.clark@email.com",   UserName = "brandonc",     FirstName = "Brandon", LastName = "Clark",
+          Lat = 25.7700, Lng = -80.2000, Bio = "Soccer fanatic and weekend league player. Team drills and pick-up games welcome!",
+          FitnessLevel = FitnessLevel.Intermediate, HasHomeGym = true },
+
+    new { Email = "sophia.martinez@email.com", UserName = "sophiam",      FirstName = "Sophia",  LastName = "Martinez",
+          Lat = 25.7600, Lng = -80.2200, Bio = "Dance fitness coach specializing in Zumba and cardio dance. Let's get moving!",
+          FitnessLevel = FitnessLevel.Advanced,     HasHomeGym = false },
+
+    new { Email = "ethan.wilson@email.com",    UserName = "ethanw",       FirstName = "Ethan",   LastName = "Wilson",
+          Lat = 25.7850, Lng = -80.2300, Bio = "Nature hiker and trail runner. I’m in search of weekend adventure partners!",
+          FitnessLevel = FitnessLevel.Beginner,     HasHomeGym = false },
+
+    new { Email = "chloe.davis@email.com",     UserName = "chloed",       FirstName = "Chloe",   LastName = "Davis",
+          Lat = 25.7900, Lng = -80.2400, Bio = "Bodybuilding enthusiast working on gaining mass. Spotters and gym buddies appreciated!",
+          FitnessLevel = FitnessLevel.Advanced,     HasHomeGym = true }
             };
 
             var random = new Random();
@@ -401,67 +432,202 @@ namespace SmartFitnessApi.Data.Seeding
             await context.AddRangeAsync(preferences);
             await context.SaveChangesAsync();
         }
-
-        private static async Task SeedMatches(SmartFitnessDbContext context, List<Profile> profiles)
+        private static async Task SeedMatchRequests(
+                    SmartFitnessDbContext context,
+                    List<Profile> profiles)
         {
-            var matches = new List<MatchRequest>();
             var random = new Random();
             var now = DateTime.UtcNow;
+            var requests = new List<MatchRequest>();
 
-            // Create some accepted matches
-            var matchPairs = new[]
+            // create a handful of accepted requests
+            var pairs = new[] { (0, 6), (1, 3), (2, 8), (4, 2), (5, 7) };
+            foreach (var (i, j) in pairs)
             {
-                (0, 6), // Sarah & Jessica (both runners/triathletes)
-                (1, 3), // Mike & David (both strength training)
-                (2, 8), // Emily & Maria (yoga/dance)
-                (4, 2), // Lisa & Emily (beginner with instructor)
-                (5, 7), // Alex & Ryan (sports/combat)
-            };
-
-            foreach (var (idx1, idx2) in matchPairs)
-            {
-                if (idx1 < profiles.Count && idx2 < profiles.Count)
+                if (i < profiles.Count && j < profiles.Count)
                 {
-                    matches.Add(new MatchRequest
+                    requests.Add(new MatchRequest
                     {
-                        RequesterId = profiles[idx1].Id,
-                        RequesteeId = profiles[idx2].Id,
+                        RequesterId = profiles[i].Id,
+                        RequesteeId = profiles[j].Id,
                         Status = MatchStatus.Accepted,
-                        CompatibilityScore = 75 + random.Next(20),
-                        CreatedAt = now.AddDays(-random.Next(7, 30)),
-                        RespondedAt = now.AddDays(-random.Next(1, 6)),
-                        LastInteractionAt = now.AddDays(-random.Next(0, 3)),
+                        CompatibilityScore = 70 + random.Next(30),
+                        CreatedAt = now.AddDays(-random.Next(10, 30)),
+                        RespondedAt = now.AddDays(-random.Next(1, 5)),
+                        LastInteractionAt = now.AddDays(-random.Next(0, 2)),
+                        InitialMessage = "Hey, looks like we share some interests—want to connect?",
+                        SharedActivitiesJson = "[\"Running\",\"Cycling\"]"
+                    });
+                }
+            }
+
+            // plus a few pending
+            for (int k = 0; k < 5; k++)
+            {
+                var a = random.Next(profiles.Count);
+                var b = random.Next(profiles.Count);
+                if (a == b ||
+                    requests.Any(r => (r.RequesterId == profiles[a].Id && r.RequesteeId == profiles[b].Id)))
+                    continue;
+
+                requests.Add(new MatchRequest
+                {
+                    RequesterId = profiles[a].Id,
+                    RequesteeId = profiles[b].Id,
+                    Status = MatchStatus.Pending,
+                    CompatibilityScore = 60 + random.Next(20),
+                    CreatedAt = now.AddDays(-random.Next(0, 5)),
+                    InitialMessage = "Hi! Looking for a workout partner—are you interested?",
+                    SharedActivitiesJson = "[\"Weight Training\"]"
+                });
+            }
+
+            await context.MatchRequests.AddRangeAsync(requests);
+            await context.SaveChangesAsync();
+        }
+
+
+        private static async Task SeedMessages(SmartFitnessDbContext context)
+        {
+            var now = DateTime.UtcNow;
+            var rnd = new Random();
+            var allMatches = await context.Matches.ToListAsync();
+            var messages = new List<Message>();
+
+            foreach (var m in allMatches)
+            {
+                // 1–3 messages per match
+                int count = rnd.Next(1, 4);
+                for (int i = 0; i < count; i++)
+                {
+                    messages.Add(new Message
+                    {
+                        MatchId = m.Id,
+                        SenderId = (i % 2 == 0 ? m.User1Id : m.User2Id),
+                        Content = $"Sample message #{i + 1}",
+                        SentAt = now.AddMinutes(-rnd.Next(0, 120)),
+                        IsRead = rnd.Next(2) == 0
+                    });
+                }
+            }
+
+            await context.Messages.AddRangeAsync(messages);
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedRefreshTokens(SmartFitnessDbContext context)
+        {
+            var now = DateTime.UtcNow;
+            var users = await context.Users.ToListAsync();
+            var tokens = users.Select(u => new UserRefreshToken
+            {
+                UserId = u.Id,
+                Token = Guid.NewGuid().ToString("N"),
+                ExpiresAt = now.AddDays(7),
+                CreatedAt = now,
+                RevokedAt = null,
+                RevokedReason = null
+            }).ToList();
+
+            await context.UserRefreshTokens.AddRangeAsync(tokens);
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedPasswordResetTokens(SmartFitnessDbContext context)
+        {
+            var now = DateTime.UtcNow;
+            var users = await context.Users.ToListAsync();
+            var tokens = users.Select(u => new PasswordResetToken
+            {
+                UserId = u.Id,
+                Token = Guid.NewGuid().ToString("N"),
+                ExpiresAt = now.AddHours(1),
+                Used = false
+            }).ToList();
+
+            await context.PasswordResetTokens.AddRangeAsync(tokens);
+            await context.SaveChangesAsync();
+        }
+        private static async Task SeedMatches(
+    SmartFitnessDbContext context,
+    List<Profile> profiles)
+        {
+            var now = DateTime.UtcNow;
+            var rnd = new Random();
+            var requests = new List<MatchRequest>();
+
+            // ─── 1) Build a few accepted match‐requests ───
+            var acceptedPairs = new[]
+            {
+        (0, 6), // Sarah & Jessica
+        (1, 3), // Mike & David
+        (2, 8), // Emily & Maria
+        (4, 2), // Lisa & Emily
+        (5, 7), // Alex & Ryan
+    };
+
+            foreach (var (i, j) in acceptedPairs)
+            {
+                if (i < profiles.Count && j < profiles.Count)
+                {
+                    requests.Add(new MatchRequest
+                    {
+                        RequesterId = profiles[i].Id,
+                        RequesteeId = profiles[j].Id,
+                        Status = MatchStatus.Accepted,
+                        CompatibilityScore = 75 + rnd.Next(20),
+                        CreatedAt = now.AddDays(-rnd.Next(7, 30)),
+                        RespondedAt = now.AddDays(-rnd.Next(1, 6)),
+                        LastInteractionAt = now.AddDays(-rnd.Next(0, 3)),
                         InitialMessage = "Hey! I noticed we both enjoy similar activities. Want to train together?",
                         SharedActivitiesJson = "[\"Running\",\"Cycling\"]"
                     });
                 }
             }
 
-            // Create some pending matches
-            for (int i = 0; i < 5; i++)
+            // ─── 2) Build a few pending match‐requests ───
+            for (int k = 0; k < 5; k++)
             {
-                var requester = profiles[random.Next(profiles.Count)];
-                var requestee = profiles[random.Next(profiles.Count)];
+                var a = profiles[rnd.Next(profiles.Count)];
+                var b = profiles[rnd.Next(profiles.Count)];
 
-                if (requester.Id != requestee.Id &&
-                    !matches.Any(m => (m.RequesterId == requester.Id && m.RequesteeId == requestee.Id) ||
-                                     (m.RequesterId == requestee.Id && m.RequesteeId == requester.Id)))
+                if (a.Id == b.Id ||
+                    requests.Any(r =>
+                       (r.RequesterId == a.Id && r.RequesteeId == b.Id) ||
+                       (r.RequesterId == b.Id && r.RequesteeId == a.Id)))
+                    continue;
+
+                requests.Add(new MatchRequest
                 {
-                    matches.Add(new MatchRequest
-                    {
-                        RequesterId = requester.Id,
-                        RequesteeId = requestee.Id,
-                        Status = MatchStatus.Pending,
-                        CompatibilityScore = 60 + random.Next(30),
-                        CreatedAt = now.AddDays(-random.Next(0, 3)),
-                        InitialMessage = "Hi! Looking for a workout partner. Interested?",
-                        SharedActivitiesJson = "[\"Weight Training\"]"
-                    });
-                }
+                    RequesterId = a.Id,
+                    RequesteeId = b.Id,
+                    Status = MatchStatus.Pending,
+                    CompatibilityScore = 60 + rnd.Next(30),
+                    CreatedAt = now.AddDays(-rnd.Next(0, 3)),
+                    InitialMessage = "Hi! Looking for a workout partner. Interested?",
+                    SharedActivitiesJson = "[\"Weight Training\"]"
+                });
             }
 
-            await context.AddRangeAsync(matches);
+            // ─── 3) Persist all match‐requests ───
+            await context.MatchRequests.AddRangeAsync(requests);
+            await context.SaveChangesAsync();
+
+            // ─── 4) Project accepted requests into Matches ───
+            var matches = requests
+                .Where(r => r.Status == MatchStatus.Accepted)
+                .Select(r => new Match
+                {
+                    User1Id = r.RequesterId,
+                    User2Id = r.RequesteeId,
+                    CreatedAt = r.RespondedAt ?? r.CreatedAt
+                })
+                .ToList();
+
+            // ─── 5) Persist actual Matches ───
+            await context.Matches.AddRangeAsync(matches);
             await context.SaveChangesAsync();
         }
+
     }
 }

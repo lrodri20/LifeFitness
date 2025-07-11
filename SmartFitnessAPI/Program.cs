@@ -79,6 +79,8 @@ namespace SmartFitnessApi
             builder.Services.AddScoped<ILikeService, LikeService>();
             builder.Services.AddScoped<IProfileService, ProfileService>();
             builder.Services.AddScoped<IChatService, ChatService>();
+            builder.Services.AddScoped<IUsersService, UsersService>();
+
             builder.Services.AddControllers();
             builder.Services.AddDbContext<SmartFitnessDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

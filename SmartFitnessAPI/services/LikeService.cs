@@ -88,7 +88,7 @@ namespace SmartFitnessApi.Services
         public async Task<IEnumerable<IncomingLikeDto>> GetIncomingLikesAsync(int userId)
         {
             var requests = await _context.MatchRequests
-                .Where(m => m.RequesteeId == userId && m.RespondedAt == null)
+                .Where(m => m.RequesteeId == userId)
                 .OrderByDescending(m => m.CreatedAt)
                 .ToListAsync();
 

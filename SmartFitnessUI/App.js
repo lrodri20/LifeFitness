@@ -17,6 +17,7 @@ import LikesScreen from './screens/LikesScreen';
 import MessagesScreen from './screens/MessagesScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ViewProfileScreen from './screens/ViewProfileScreen';
+import ChatScreen from './screens/ChatScreen'; // Import ChatScreen
 const AuthStack = createStackNavigator();
 const AppStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -124,6 +125,15 @@ function RootNavigator() {
             component={SettingsScreen}
             options={{
               title: 'Profile Settings',
+              headerTitleAlign: 'center',
+              headerTintColor: '#4CAF50',
+            }}
+          />
+          <AppStack.Screen
+            name="ChatScreen"
+            component={ChatScreen}
+            options={{
+              title: 'Chat',
               headerTitleAlign: 'center',
               headerTintColor: '#4CAF50',
             }}

@@ -78,7 +78,7 @@ export default function ChatScreen({ route, navigation }) {
                     : styles.theirs,
             ]}
         >
-            <Text style={styles.bubbleText}>{item.content}</Text>
+            <Text style={styles.bubbleText}>{item.text}</Text>
             <Text style={styles.bubbleTime}>
                 {new Date(item.sentAt).toLocaleTimeString()}
             </Text>

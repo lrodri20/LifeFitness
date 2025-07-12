@@ -33,5 +33,18 @@ namespace SmartFitnessApi.Controllers
             var chats = await _chatService.GetChatsAsync(userId);
             return Ok(chats);
         }
+        [HttpGet("{chatId}/messages")]
+        public async Task<ActionResult<IEnumerable<MessageDto>>> GetMessages(
+            [FromRoute] int chatId)
+        {
+            // assume NameIdentifier claim holds the numeric user ID
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? User.FindFirst("sub")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var messages = await _chatService.GetMessagesAsync(chatId, userId);
+            return Ok(messages);
+        }
     }
 }

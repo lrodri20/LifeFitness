@@ -63,8 +63,8 @@ namespace SmartFitnessApi.Services
 
                 chats.Add(new ChatDto
                 {
-                    ChatId = $"c{match.Id}",               // e.g. "c101"
-                    MatchId = $"m{match.Id}",             // e.g. "m101"
+                    ChatId = match.Id,               // e.g. "c101"
+                    MatchId = match.Id,             // e.g. "m101"
                     OtherUser = new OtherUserDto
                     {
                         Id = profile.UserId,
@@ -80,6 +80,47 @@ namespace SmartFitnessApi.Services
             }
 
             return chats;
+        }
+
+        public async Task<IEnumerable<MessageDto>> GetMessagesAsync(int matchId, int userId)
+        {
+            // 1) Ensure this user is part of the match
+            var isParticipant = await _db.Matches
+                .AnyAsync(m =>
+                    m.Id == matchId &&
+                    (m.User1Id == userId || m.User2Id == userId));
+
+            if (!isParticipant)
+                throw new UnauthorizedAccessException("You are not a member of this chat.");
+
+            // 2) Query all messages in chronological order
+            var dtos = await _db.Messages
+                .Where(msg => msg.MatchId == matchId)
+                .OrderBy(msg => msg.SentAt)
+                .Select(msg => new MessageDto
+                {
+                    Id = $"msg{msg.Id}",
+                    SenderId = $"u{msg.SenderId}",
+                    Text = msg.Content,
+                    SentAt = msg.SentAt.ToUniversalTime().ToString("o")
+                })
+                .ToListAsync();
+
+            // 3) OPTIONAL: mark incoming messages as read
+            var unread = await _db.Messages
+                .Where(msg =>
+                    msg.MatchId == matchId &&
+                    msg.SenderId != userId &&
+                    !msg.IsRead)
+                .ToListAsync();
+
+            if (unread.Count > 0)
+            {
+                unread.ForEach(m => m.IsRead = true);
+                await _db.SaveChangesAsync();
+            }
+
+            return dtos;
         }
     }
 }

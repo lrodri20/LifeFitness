@@ -33,4 +33,11 @@ namespace SmartFitnessApi.Data.Dtos
         /// </summary>
         public string SentAt { get; set; }
     }
+    public class SendMessageDto
+    {
+        /// <summary>
+        /// The text content of the new message.
+        /// </summary>
+        public string Text { get; set; }
+    }
 }

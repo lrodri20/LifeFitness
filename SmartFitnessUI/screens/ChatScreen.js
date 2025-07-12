@@ -60,7 +60,7 @@ export default function ChatScreen({ route, navigation }) {
                     Authorization: `Bearer ${userToken}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ content: text.trim() }),
+                body: JSON.stringify({ Text: text.trim() }),
             });
             setText('');
             loadMessages();

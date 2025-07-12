@@ -122,5 +122,38 @@ namespace SmartFitnessApi.Services
 
             return dtos;
         }
+        public async Task<MessageDto> SendMessageAsync(int matchId, int userId, string text)
+        {
+            // 1) Verify user participates in this chat
+            var isInMatch = await _db.Matches
+                .AnyAsync(m =>
+                    m.Id == matchId &&
+                    (m.User1Id == userId || m.User2Id == userId));
+            if (!isInMatch)
+                throw new UnauthorizedAccessException("Not a member of this chat");
+
+            // 2) Create and save the message
+            var now = DateTime.UtcNow;
+            var message = new Message
+            {
+                MatchId = matchId,
+                SenderId = userId,
+                Content = text,
+                SentAt = now,
+                IsRead = false
+            };
+
+            _db.Messages.Add(message);
+            await _db.SaveChangesAsync();
+
+            // 3) Map to DTO
+            return new MessageDto
+            {
+                Id = $"msg{message.Id}",
+                SenderId = $"u{message.SenderId}",
+                Text = message.Content,
+                SentAt = message.SentAt.ToUniversalTime().ToString("o")
+            };
+        }
     }
 }

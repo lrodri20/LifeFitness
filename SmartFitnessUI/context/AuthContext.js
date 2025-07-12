@@ -63,29 +63,30 @@ export function AuthProvider({ children }) {
         };
         bootstrap();
     }, []);
-
+    useEffect(() => {
+        AsyncStorage.getItem('userToken').then(token => {
+            setUserToken(token);
+        });
+    }, []);
     const authContext = {
         /**
          * signIn: store token and update state
          */
         signIn: async ({ token }) => {
             await AsyncStorage.setItem('userToken', token);
-            dispatch({ type: 'SIGN_IN', token });
+            setUserToken(null);
         },
         /**
          * signOut: remove token and update state
          */
         signOut: async () => {
             await AsyncStorage.removeItem('userToken');
-            dispatch({ type: 'SIGN_OUT' });
+            setUserToken(null);
         },
     };
 
     return (
-        <AuthContext.Provider value={{
-            ...state,
-            ...authContext,
-        }}>
+        <AuthContext.Provider value={{ userToken, signIn, signOut }}>
             {children}
         </AuthContext.Provider>
     );

@@ -46,5 +46,25 @@ namespace SmartFitnessApi.Controllers
             var messages = await _chatService.GetMessagesAsync(chatId, userId);
             return Ok(messages);
         }
+        [HttpPost("{chatId}/messages")]
+        public async Task<ActionResult<MessageDto>> SendMessage(
+        [FromRoute] int chatId,
+        [FromBody] SendMessageDto body)
+        {
+            // extract numeric user ID from JWT
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                            ?? User.FindFirstValue("sub");
+            if (!int.TryParse(userIdStr, out var userId))
+                return Unauthorized();
+
+            var msgDto = await _chatService.SendMessageAsync(chatId, userId, body.Text);
+
+            // return 201 Created with location header pointing to GET messages
+            return CreatedAtAction(
+                nameof(GetMessages),
+                new { chatId },
+                msgDto
+            );
+        }
     }
 }

@@ -74,19 +74,22 @@ export function AuthProvider({ children }) {
          */
         signIn: async ({ token }) => {
             await AsyncStorage.setItem('userToken', token);
-            setUserToken(null);
+            dispatch({ type: 'SIGN_IN', token });
         },
         /**
          * signOut: remove token and update state
          */
         signOut: async () => {
             await AsyncStorage.removeItem('userToken');
-            setUserToken(null);
+            dispatch({ type: 'SIGN_OUT' });
         },
     };
 
     return (
-        <AuthContext.Provider value={{ userToken, signIn, signOut }}>
+        <AuthContext.Provider value={{
+            ...state,
+            ...authContext,
+        }}>
             {children}
         </AuthContext.Provider>
     );

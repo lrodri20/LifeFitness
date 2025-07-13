@@ -18,9 +18,9 @@ import { AuthContext } from '../context/AuthContext';
 const API_URL = 'http://localhost:5199';
 
 export default function ChatScreen({ route, navigation }) {
-    const { userToken } = useContext(AuthContext);
+    const { userToken, user } = useContext(AuthContext);
     const { matchId } = route.params;
-
+    const myUserId = user?.id;
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(true);
@@ -71,12 +71,14 @@ export default function ChatScreen({ route, navigation }) {
 
     const renderItem = ({ item }) => (
         <View
-            style={[
-                styles.bubble,
-                item.senderId === /* your userId */ item.senderId
-                    ? styles.mine
-                    : styles.theirs,
-            ]}
+            style={
+                [
+                    styles.bubble,
+                    // compare item.senderId ("u123") against your own ID
+                    item.senderId === myUserId
+                        ? styles.myBubble      // your messages: right
+                        : styles.theirBubble,  // others: left
+                ]}
         >
             <Text style={styles.bubbleText}>{item.text}</Text>
             <Text style={styles.bubbleTime}>
@@ -141,6 +143,20 @@ const styles = StyleSheet.create({
     },
     bubbleText: { fontSize: 16 },
     bubbleTime: { fontSize: 10, color: '#666', marginTop: 4, alignSelf: 'flex-end' },
+    bubble: {
+        marginVertical: 4,
+        padding: 8,
+        borderRadius: 8,
+        maxWidth: '75%',
+    },
+    myBubble: {
+        backgroundColor: '#DCF8C6',
+        alignSelf: 'flex-end',
+    },
+    theirBubble: {
+        backgroundColor: '#EEE',
+        alignSelf: 'flex-start',
+    },
     inputRow: {
         flexDirection: 'row',
         padding: 8,
